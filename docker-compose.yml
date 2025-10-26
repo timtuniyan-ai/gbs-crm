@@ -2,16 +2,17 @@ version: '3.8'
 
 services:
   gbs-crm:
-    build: .
+    build:
+      context: .
+      args:
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
     container_name: gbs-crm-app
     ports:
       - "3000:80"
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-    volumes:
-      # Монтируем .env файл для продакшена
-      - ./.env:/app/.env:ro
     networks:
       - gbs-network
 
