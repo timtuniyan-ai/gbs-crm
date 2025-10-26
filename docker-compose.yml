@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  gbs-crm:
+    build: .
+    container_name: gbs-crm-app
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    volumes:
+      # Монтируем .env файл для продакшена
+      - ./.env:/app/.env:ro
+    networks:
+      - gbs-network
+
+networks:
+  gbs-network:
+    driver: bridge
