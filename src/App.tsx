@@ -8,6 +8,7 @@ import { ClientDetailsModal } from "./components/ClientDetailsModal";
 import { Client, Note, Task } from "./types";
 import { clientsApi, notesApi, tasksApi, authApi } from "../lib/api";
 import { supabase } from "../lib/supabase";
+import { taskDueChecker } from "./utils/taskDueChecker";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -45,6 +46,25 @@ export default function App() {
       loadData();
     }
   }, [isLoggedIn]);
+
+  // Start task due checker when app loads
+  useEffect(() => {
+    taskDueChecker.startDailyCheck();
+    
+    // Добавляем в глобальную область для тестирования
+    if (typeof window !== 'undefined') {
+      (window as any).taskDueChecker = taskDueChecker;
+      // Также добавляем telegramNotifications для отладки
+      import('./utils/telegramNotifications').then(({ telegramNotifications }) => {
+        (window as any).telegramNotifications = telegramNotifications;
+      });
+    }
+    
+    // Cleanup function to stop checker when component unmounts
+    return () => {
+      taskDueChecker.stop();
+    };
+  }, []);
 
   const loadData = async () => {
     try {
