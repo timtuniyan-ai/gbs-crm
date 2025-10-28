@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { LoginForm } from "./components/LoginForm";
 import { Dashboard } from "./components/Dashboard";
 import { AddClientModal } from "./components/AddClientModal";
 import { ClientDetailsModal } from "./components/ClientDetailsModal";
+import { BriefPublicPage } from "./components/BriefPublicPage";
 import { Client, Note, Task } from "./types";
 import { clientsApi, notesApi, tasksApi, authApi } from "../lib/api";
 import { supabase } from "../lib/supabase";
 import { taskDueChecker } from "./utils/taskDueChecker";
 
-export default function App() {
+function CRMApp() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -241,5 +243,17 @@ export default function App() {
         defaultTab={defaultTab}
       />
     </DndProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<CRMApp />} />
+        <Route path="/brief/:token" element={<BriefPublicPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

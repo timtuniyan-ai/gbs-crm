@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { Client, Note, Task } from '../src/types'
+import { Client, Note, Task, Brief, BriefDocumentType, BriefLanguage } from '../src/types'
 
 // Helper function to convert database row to Client
 function dbToClient(row: any): Client {
@@ -334,5 +334,148 @@ export const authApi = {
     const { data, error } = await supabase.auth.getUser()
     if (error) throw error
     return data.user
+  },
+}
+
+// Helper function to convert database row to Brief
+function dbToBrief(row: any): Brief {
+  return {
+    id: row.id,
+    clientId: row.client_id,
+    documentType: row.document_type,
+    language: row.language,
+    token: row.token,
+    accessCode: row.access_code,
+    status: row.status,
+    currentStep: row.current_step,
+    data: row.data || {},
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+    completedAt: row.completed_at ? new Date(row.completed_at) : undefined,
+    createdBy: row.created_by,
+  }
+}
+
+// Helper function to convert Brief to database format
+function briefToDb(brief: Partial<Brief>) {
+  return {
+    client_id: brief.clientId,
+    document_type: brief.documentType,
+    language: brief.language,
+    token: brief.token,
+    access_code: brief.accessCode,
+    status: brief.status,
+    current_step: brief.currentStep,
+    data: brief.data,
+    completed_at: brief.completedAt?.toISOString(),
+    created_by: brief.createdBy,
+  }
+}
+
+// Generate random token and access code
+function generateBriefCredentials() {
+  const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  const accessCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit code
+  return { token, accessCode };
+}
+
+// Briefs API
+export const briefsApi = {
+  async getByClientId(clientId: string) {
+    const { data, error } = await supabase
+      .from('gbs_crm_briefs')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data.map(dbToBrief)
+  },
+
+  async getByToken(token: string) {
+    const { data, error } = await supabase
+      .from('gbs_crm_briefs')
+      .select('*')
+      .eq('token', token)
+      .single()
+
+    if (error) throw error
+    return dbToBrief(data)
+  },
+
+  async create(clientId: string, documentType: BriefDocumentType, language: BriefLanguage) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { token, accessCode } = generateBriefCredentials()
+
+    const { data, error } = await supabase
+      .from('gbs_crm_briefs')
+      .insert({
+        client_id: clientId,
+        document_type: documentType,
+        language: language,
+        token: token,
+        access_code: accessCode,
+        status: 'created',
+        current_step: 0,
+        data: {},
+        created_by: user.id,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return dbToBrief(data)
+  },
+
+  async verifyAccess(token: string, accessCode: string) {
+    const { data, error } = await supabase
+      .from('gbs_crm_briefs')
+      .select('*')
+      .eq('token', token)
+      .eq('access_code', accessCode)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        throw new Error('Invalid token or access code')
+      }
+      throw error
+    }
+    return dbToBrief(data)
+  },
+
+  async updateProgress(id: string, currentStep: number, data: Record<string, any>, status?: 'in_progress' | 'completed') {
+    const updateData: any = {
+      current_step: currentStep,
+      data: data,
+    }
+
+    if (status) {
+      updateData.status = status
+      if (status === 'completed') {
+        updateData.completed_at = new Date().toISOString()
+      }
+    }
+
+    const { data: result, error } = await supabase
+      .from('gbs_crm_briefs')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return dbToBrief(result)
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase
+      .from('gbs_crm_briefs')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
   },
 }

@@ -1,13 +1,16 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Client, Note, Document, Task } from "../types";
+import { Client, Note, Task, Brief, BriefDocumentType, BriefLanguage } from "../types";
 import { Button } from "./ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { NotesSection } from "./NotesSection";
 import { TasksSection } from "./TasksSection";
+import { CreateBriefModal } from "./CreateBriefModal";
+import { BriefDetailsModal } from "./BriefDetailsModal";
 import { Badge } from "./ui/badge";
-import { Mail, Phone, Building2, FileText, User, Archive, ArchiveRestore } from "lucide-react";
+import { Mail, Phone, Building2, FileText, User, Archive, ArchiveRestore, Plus } from "lucide-react";
 import { formatDateTimeCompact, formatDate } from "../utils/dateUtils";
+import { briefsApi } from "../../lib/api";
 import {
   Select,
   SelectContent,
@@ -29,14 +32,8 @@ interface ClientDetailsModalProps {
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
   onDeleteTask: (taskId: string) => void;
   onToggleArchive: (clientId: string) => void;
-  defaultTab?: "info" | "notes" | "tasks";
+  defaultTab?: "info" | "notes" | "tasks" | "briefs";
 }
-
-const AVAILABLE_DOCUMENTS: Document[] = [
-  { id: "1", name: "Service Agreement", description: "Standard contract" },
-  { id: "2", name: "Commercial Proposal", description: "Proposal for client" },
-  { id: "3", name: "Work Completion Certificate", description: "Acceptance certificate" },
-];
 
 export function ClientDetailsModal({
   client,
@@ -53,9 +50,11 @@ export function ClientDetailsModal({
   onToggleArchive,
   defaultTab = "info",
 }: ClientDetailsModalProps) {
-  const [selectedDocument, setSelectedDocument] = useState<string>("");
-  const [showDocumentSelector, setShowDocumentSelector] = useState(false);
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const [showCreateBriefModal, setShowCreateBriefModal] = useState(false);
+  const [showBriefDetailsModal, setShowBriefDetailsModal] = useState(false);
+  const [selectedBrief, setSelectedBrief] = useState<Brief | null>(null);
+  const [briefs, setBriefs] = useState<Brief[]>([]);
 
   // Update active tab when defaultTab changes
   useEffect(() => {
@@ -64,38 +63,109 @@ export function ClientDetailsModal({
     }
   }, [defaultTab, open]);
 
+  // Load briefs when modal opens
+  useEffect(() => {
+    if (open && client) {
+      loadBriefs();
+    }
+  }, [open, client]);
+
+  const loadBriefs = async () => {
+    if (!client) return;
+    try {
+      const clientBriefs = await briefsApi.getByClientId(client.id);
+      setBriefs(clientBriefs);
+    } catch (error) {
+      console.error('Error loading briefs:', error);
+    }
+  };
+
   if (!client) return null;
 
-  const handleGenerateDocument = () => {
-    if (selectedDocument) {
-      const doc = AVAILABLE_DOCUMENTS.find(d => d.id === selectedDocument);
-      alert(`Generating document: ${doc?.name}\nFor client: ${client.firstName} ${client.lastName}`);
-      setSelectedDocument("");
-      setShowDocumentSelector(false);
-    }
+  const handleCreateBrief = async (documentType: BriefDocumentType, language: BriefLanguage) => {
+    if (!client) throw new Error('No client selected');
+    
+    const brief = await briefsApi.create(client.id, documentType, language);
+    const briefUrl = `${window.location.origin}/brief/${brief.token}`;
+    
+    // Reload briefs to show the new one
+    await loadBriefs();
+    
+    return {
+      token: brief.token,
+      accessCode: brief.accessCode,
+      briefUrl: briefUrl,
+    };
+  };
+
+  const handleViewBrief = (brief: Brief) => {
+    setSelectedBrief(brief);
+    setShowBriefDetailsModal(true);
+  };
+
+  const handleDeleteBrief = async (briefId: string) => {
+    await briefsApi.delete(briefId);
+    await loadBriefs();
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-none w-[92vw] h-[90vh] overflow-hidden border border-gray-200 flex flex-col p-0">
-        <DialogHeader className="pb-3 px-6 pt-6 shrink-0">
-          <DialogTitle className="flex items-center gap-2.5 text-gray-900 text-lg">
-            <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center">
-              <User className="w-5 h-5 text-blue-600" />
+      <DialogContent className="!max-w-none w-[92vw] h-[90vh] overflow-hidden border border-gray-200 flex flex-col p-0 bg-white">
+        <DialogHeader className="pb-4 px-6 pt-6 shrink-0 border-b border-gray-200">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <User className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <DialogTitle className="text-gray-900 text-lg">
+                    {client.firstName} {client.lastName}
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-600 text-xs">
+                    Manage client information, notes, and tasks
+                  </DialogDescription>
+                </div>
+              </div>
+
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
+                <div className="flex justify-center">
+                  <TabsList className="inline-flex bg-gray-50 border border-gray-300 p-1 rounded-lg h-10 shadow-sm">
+                    <TabsTrigger value="info" className="rounded-md text-sm flex items-center gap-2 px-4 h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm">Info</TabsTrigger>
+                    <TabsTrigger value="notes" className="rounded-md text-sm flex items-center gap-2 px-4 h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm">Notes</TabsTrigger>
+                    <TabsTrigger value="tasks" className="rounded-md text-sm flex items-center gap-2 px-4 h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm">Tasks</TabsTrigger>
+                    <TabsTrigger value="briefs" className="rounded-md text-sm flex items-center gap-2 px-4 h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm">Brief</TabsTrigger>
+                  </TabsList>
+                </div>
+              </Tabs>
             </div>
-            <span>{client.firstName} {client.lastName}</span>
-          </DialogTitle>
-          <DialogDescription className="text-gray-600 text-sm ml-11">
-            Manage client information, notes, and tasks
-          </DialogDescription>
+
+            <Button 
+              onClick={() => onToggleArchive(client.id)}
+              variant={client.archived ? "default" : "outline"}
+              size="sm"
+              className={`shrink-0 mr-4 ${
+                client.archived 
+                  ? "bg-green-600 hover:bg-green-700 text-white" 
+                  : ""
+              }`}
+            >
+              {client.archived ? (
+                <>
+                  <ArchiveRestore className="w-4 h-4 mr-2" />
+                  Restore
+                </>
+              ) : (
+                <>
+                  <Archive className="w-4 h-4 mr-2" />
+                  Archive
+                </>
+              )}
+            </Button>
+          </div>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col flex-1 overflow-hidden px-6 pb-6">
-          <TabsList className="grid w-full grid-cols-3 bg-gray-100 p-1 rounded-lg h-9 shrink-0">
-            <TabsTrigger value="info" className="rounded-md text-sm data-[state=active]:bg-white">Information</TabsTrigger>
-            <TabsTrigger value="notes" className="rounded-md text-sm data-[state=active]:bg-white">Notes</TabsTrigger>
-            <TabsTrigger value="tasks" className="rounded-md text-sm data-[state=active]:bg-white">Tasks</TabsTrigger>
-          </TabsList>
 
           <TabsContent value="info" className="mt-4 overflow-y-auto flex-1">
             <div className="grid md:grid-cols-2 gap-4">
@@ -180,67 +250,19 @@ export function ClientDetailsModal({
                   </div>
                 </div>
 
-                {/* Company Information */}
-                <div className="bg-white rounded-lg border border-gray-200 p-5 space-y-3">
-                  <h3 className="text-xs text-gray-900 mb-2 flex items-center gap-2">
-                    <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-                    Company Information
-                  </h3>
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
-                      <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                {/* Additional Notes */}
+                <div className="bg-white rounded-lg border border-gray-200 p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
+                      <svg className="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-500">Industry</p>
-                      <p className="text-sm text-gray-900 truncate">{client.industry || 'Not specified'}</p>
-                    </div>
+                    <h3 className="text-xs text-gray-900">Additional Notes</h3>
                   </div>
-
-                  <div className="h-px bg-gray-200"></div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 bg-pink-100 rounded-lg flex items-center justify-center shrink-0">
-                      <svg className="w-3.5 h-3.5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-500">Date Organized</p>
-                      <p className="text-sm text-gray-900 truncate">
-                        {client.dateOrganized ? formatDate(client.dateOrganized) : 'Not specified'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-gray-200"></div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 bg-cyan-100 rounded-lg flex items-center justify-center shrink-0">
-                      <svg className="w-3.5 h-3.5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-500">Estimated Yearly Revenue</p>
-                      <p className="text-sm text-gray-900 truncate">{client.estimatedYearlyRevenue || 'Not specified'}</p>
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-gray-200"></div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 bg-teal-100 rounded-lg flex items-center justify-center shrink-0">
-                      <svg className="w-3.5 h-3.5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-500">Estimated Monthly Revenue</p>
-                      <p className="text-sm text-gray-900 truncate">{client.estimatedMonthlyRevenue || 'Not specified'}</p>
-                    </div>
-                  </div>
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
+                    {client.descriptionNotes || 'No notes available'}
+                  </p>
                 </div>
               </div>
 
@@ -316,104 +338,69 @@ export function ClientDetailsModal({
                   </div>
                 </div>
 
-                {/* Additional Notes */}
-                <div className="bg-white rounded-lg border border-gray-200 p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
-                      <svg className="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                {/* Company Information */}
+                <div className="bg-white rounded-lg border border-gray-200 p-5 space-y-3">
+                  <h3 className="text-xs text-gray-900 mb-2 flex items-center gap-2">
+                    <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Company Information
+                  </h3>
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
+                      <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                       </svg>
                     </div>
-                    <h3 className="text-xs text-gray-900">Additional Notes</h3>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-gray-500">Industry</p>
+                      <p className="text-sm text-gray-900 truncate">{client.industry || 'Not specified'}</p>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
-                    {client.descriptionNotes || 'No notes available'}
-                  </p>
+
+                  <div className="h-px bg-gray-200"></div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 bg-pink-100 rounded-lg flex items-center justify-center shrink-0">
+                      <svg className="w-3.5 h-3.5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-gray-500">Date Organized</p>
+                      <p className="text-sm text-gray-900 truncate">
+                        {client.dateOrganized ? formatDate(client.dateOrganized) : 'Not specified'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-gray-200"></div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 bg-cyan-100 rounded-lg flex items-center justify-center shrink-0">
+                      <svg className="w-3.5 h-3.5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-gray-500">Estimated Yearly Revenue</p>
+                      <p className="text-sm text-gray-900 truncate">{client.estimatedYearlyRevenue || 'Not specified'}</p>
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-gray-200"></div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 bg-teal-100 rounded-lg flex items-center justify-center shrink-0">
+                      <svg className="w-3.5 h-3.5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-gray-500">Estimated Monthly Revenue</p>
+                      <p className="text-sm text-gray-900 truncate">{client.estimatedMonthlyRevenue || 'Not specified'}</p>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Quick Actions */}
-                <div className="bg-white rounded-lg border border-gray-200 p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    <h3 className="text-xs text-gray-900">Quick Actions</h3>
-                  </div>
-                  
-                  <div className="flex flex-col gap-2.5">
-                    {!showDocumentSelector ? (
-                      <Button 
-                        onClick={() => setShowDocumentSelector(true)}
-                        size="sm"
-                        className="w-full"
-                      >
-                        <FileText className="w-4 h-4 mr-2" />
-                        Generate Document
-                      </Button>
-                    ) : (
-                      <div className="space-y-2.5">
-                        <Select value={selectedDocument} onValueChange={setSelectedDocument}>
-                          <SelectTrigger className="bg-white h-9 border-gray-300 text-sm">
-                            <SelectValue placeholder="Select document type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {AVAILABLE_DOCUMENTS.map((doc) => (
-                              <SelectItem key={doc.id} value={doc.id}>
-                                <div>
-                                  <div className="text-sm">{doc.name}</div>
-                                  <div className="text-xs text-gray-500">{doc.description}</div>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <div className="flex gap-2">
-                          <Button 
-                            onClick={handleGenerateDocument}
-                            disabled={!selectedDocument}
-                            size="sm"
-                            className="flex-1"
-                          >
-                            Create
-                          </Button>
-                          <Button 
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setShowDocumentSelector(false);
-                              setSelectedDocument("");
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <Button 
-                      onClick={() => onToggleArchive(client.id)}
-                      variant={client.archived ? "default" : "outline"}
-                      size="sm"
-                      className={`w-full transition-colors ${
-                        client.archived 
-                          ? "bg-green-600 hover:bg-green-700" 
-                          : ""
-                      }`}
-                    >
-                      {client.archived ? (
-                        <>
-                          <ArchiveRestore className="w-4 h-4 mr-2" />
-                          Restore from Archive
-                        </>
-                      ) : (
-                        <>
-                          <Archive className="w-4 h-4 mr-2" />
-                          Move to Archive
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
               </div>
             </div>
           </TabsContent>
@@ -435,7 +422,120 @@ export function ClientDetailsModal({
               onDeleteTask={onDeleteTask}
             />
           </TabsContent>
+
+          <TabsContent value="briefs" className="mt-4 overflow-y-auto flex-1">
+            {briefs.length === 0 ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center py-12 max-w-md">
+                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FileText className="w-8 h-8 text-blue-500" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No briefs yet</h3>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Create a personalized brief for the client. They will receive a unique link and PIN code to fill it out.
+                  </p>
+                  <Button
+                    onClick={() => setShowCreateBriefModal(true)}
+                    className="flex items-center gap-2 mx-auto"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create First Brief
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+                  <div>
+                    <h3 className="text-base font-semibold text-gray-900">Client Briefs</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Total: {briefs.length}</p>
+                  </div>
+                  <Button
+                    onClick={() => setShowCreateBriefModal(true)}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Brief
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  {briefs.map((brief) => (
+                    <div key={brief.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge 
+                              variant={
+                                brief.status === 'completed' ? 'default' : 
+                                brief.status === 'in_progress' ? 'secondary' : 'outline'
+                              }
+                              className="shrink-0"
+                            >
+                              {brief.status === 'completed' ? '✓ Завершен' : 
+                               brief.status === 'in_progress' ? '● В процессе' : '○ Создан'}
+                            </Badge>
+                            <span className="text-xs text-gray-500 shrink-0">
+                              {brief.language === 'ru' ? '🇷🇺 Русский' : '🇺🇸 English'}
+                            </span>
+                          </div>
+                          
+                          <h4 className="font-medium text-gray-900 mb-1.5 text-sm">
+                            {brief.documentType === 'business_application' ? 'Business Application' :
+                             brief.documentType === 'marketing_brief' ? 'Marketing Brief' :
+                             'Technical Brief'}
+                          </h4>
+                          
+                          <div className="flex flex-col gap-1">
+                            <p className="text-xs text-gray-600">
+                              Создан: {formatDateTimeCompact(brief.createdAt)}
+                            </p>
+                            {brief.completedAt && (
+                              <p className="text-xs text-green-600">
+                                Завершен: {formatDateTimeCompact(brief.completedAt)}
+                              </p>
+                            )}
+                            {brief.status !== 'created' && (
+                              <p className="text-xs text-gray-500 font-mono">
+                                PIN: {brief.accessCode} • Шаг {brief.currentStep}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewBrief(brief)}
+                          className="text-xs"
+                        >
+                          Open
+                        </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
+
+        <CreateBriefModal
+          open={showCreateBriefModal}
+          onOpenChange={setShowCreateBriefModal}
+          onCreateBrief={handleCreateBrief}
+          clientName={`${client.firstName} ${client.lastName}`}
+        />
+
+        <BriefDetailsModal
+          open={showBriefDetailsModal}
+          onOpenChange={setShowBriefDetailsModal}
+          brief={selectedBrief}
+          onDelete={handleDeleteBrief}
+        />
       </DialogContent>
     </Dialog>
   );

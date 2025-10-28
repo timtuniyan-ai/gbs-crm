@@ -45,3 +45,23 @@ export interface Task {
   createdAt: Date;
   updatedAt?: Date;
 }
+
+export type BriefDocumentType = 'business_application' | 'marketing_brief' | 'technical_brief';
+export type BriefLanguage = 'ru' | 'en';
+export type BriefStatus = 'created' | 'in_progress' | 'completed';
+
+export interface Brief {
+  id: string;
+  clientId: string;
+  documentType: BriefDocumentType;
+  language: BriefLanguage;
+  token: string;
+  accessCode: string;
+  status: BriefStatus;
+  currentStep: number;
+  data: Record<string, any>;
+  createdAt: Date;
+  updatedAt: Date;
+  completedAt?: Date;
+  createdBy: string;
+}

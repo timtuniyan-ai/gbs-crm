@@ -137,17 +137,17 @@ export function Dashboard({ clients, tasks, onAddClientClick, onClientClick, onT
         ) : (
           <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as "active" | "archived")} className="w-full">
             <div className="flex items-center justify-between mb-6">
-              <TabsList className="bg-white border border-gray-200 p-1 rounded-lg h-10 shadow-sm">
+              <TabsList className="bg-gray-50 border border-gray-300 p-1 rounded-lg h-10 shadow-sm">
                 <TabsTrigger 
                   value="active" 
-                  className="rounded-md text-sm flex items-center gap-2 px-4 transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:bg-gray-50"
+                  className="rounded-md text-sm flex items-center gap-2 px-4 h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
                 >
                   <Users className="w-4 h-4" />
                   Active ({activeClients.length})
                 </TabsTrigger>
                 <TabsTrigger 
                   value="archived" 
-                  className="rounded-md text-sm flex items-center gap-2 px-4 transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:bg-gray-50"
+                  className="rounded-md text-sm flex items-center gap-2 px-4 h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
                 >
                   <Archive className="w-4 h-4" />
                   Archive ({archivedClients.length})
