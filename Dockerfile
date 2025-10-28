@@ -26,11 +26,14 @@ ENV VITE_TELEGRAM_CHAT_ID=$VITE_TELEGRAM_CHAT_ID
 # Собираем приложение
 RUN npm run build
 
-# Используем простой nginx для раздачи статических файлов
+# Используем nginx для раздачи статических файлов
 FROM nginx:alpine
 
 # Копируем собранное приложение
 COPY --from=builder /app/build /usr/share/nginx/html
+
+# Копируем конфигурацию nginx для SPA
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Открываем порт 80
 EXPOSE 80
