@@ -64,15 +64,15 @@ export function CreateBriefModal({ open, onOpenChange, onCreateBrief, clientName
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg bg-white">
-        <DialogHeader className="border-b pb-4">
+      <DialogContent className="max-w-lg bg-white border-gray-200">
+        <DialogHeader className="border-b border-gray-100 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-              <Sparkles className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-blue-600" />
             </div>
             <div>
               <DialogTitle className="text-xl">Create Brief for Client</DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-gray-500">
                 Create a personalized brief for <strong className="text-blue-600">{clientName}</strong>
               </DialogDescription>
             </div>
@@ -80,22 +80,22 @@ export function CreateBriefModal({ open, onOpenChange, onCreateBrief, clientName
         </DialogHeader>
 
         {!createdBrief ? (
-          <div className="space-y-6">
+          <div className="space-y-5">
             {/* Document Type */}
-            <div className="space-y-3">
-              <Label htmlFor="document-type" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-600" />
+            <div className="space-y-2">
+              <Label htmlFor="document-type" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5 text-gray-500" />
                 Document Type
               </Label>
               <Select value={documentType} onValueChange={(value) => setDocumentType(value as BriefDocumentType)}>
-                <SelectTrigger className="bg-white border-2 border-gray-300 shadow-sm hover:border-blue-400 transition-colors h-auto py-3 px-4">
+                <SelectTrigger className="bg-white border border-gray-200 hover:border-gray-300 transition-colors min-h-[56px] py-3 px-3 [&>span]:!text-left [&>span]:!justify-start [&>span]:flex-1 [&>svg]:ml-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {DOCUMENT_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       <div>
-                        <div className="font-semibold text-gray-900">{type.label}</div>
+                        <div className="font-medium text-gray-900">{type.label}</div>
                         <div className="text-xs text-gray-500 mt-0.5">{type.description}</div>
                       </div>
                     </SelectItem>
@@ -105,13 +105,13 @@ export function CreateBriefModal({ open, onOpenChange, onCreateBrief, clientName
             </div>
 
             {/* Language */}
-            <div className="space-y-3">
-              <Label htmlFor="language" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <Globe className="w-4 h-4 text-purple-600" />
+            <div className="space-y-2">
+              <Label htmlFor="language" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Globe className="w-3.5 h-3.5 text-gray-500" />
                 Language
               </Label>
               <Select value={language} onValueChange={(value) => setLanguage(value as BriefLanguage)}>
-                <SelectTrigger className="bg-white border-2 border-gray-300 shadow-sm hover:border-purple-400 transition-colors h-12 px-4">
+                <SelectTrigger className="bg-white border border-gray-200 hover:border-gray-300 transition-colors h-10 px-3">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -128,58 +128,58 @@ export function CreateBriefModal({ open, onOpenChange, onCreateBrief, clientName
             </div>
 
             {/* Info Box */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-900 flex items-start gap-2">
-                <Sparkles className="w-4 h-4 mt-0.5 shrink-0" />
+            <div className="bg-blue-50/30 p-3 rounded-lg border border-blue-100">
+              <p className="text-sm text-gray-700 flex items-start gap-2">
+                <Sparkles className="w-4 h-4 mt-0.5 shrink-0 text-blue-600" />
                 <span>A unique link and PIN code will be generated for the client to fill out the brief securely.</span>
               </p>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 pt-2 border-t">
+            <div className="flex gap-2 pt-3 border-t border-gray-100">
               <Button 
                 onClick={handleCreate} 
                 disabled={isCreating} 
-                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md h-11"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-10"
               >
                 {isCreating ? 'Creating...' : 'Create Brief'}
               </Button>
-              <Button variant="outline" onClick={handleClose} className="bg-white hover:bg-gray-50">
+              <Button variant="outline" onClick={handleClose} className="border-gray-200 hover:bg-gray-50">
                 Cancel
               </Button>
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-5">
             {/* Success Header */}
-            <div className="text-center py-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
-                <CheckCircle className="w-8 h-8 text-white" />
+            <div className="text-center py-4 bg-green-50/40 rounded-lg border border-green-100">
+              <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                <CheckCircle className="w-6 h-6 text-green-600" />
               </div>
-              <h3 className="text-xl font-bold text-green-900 mb-1">Brief Created Successfully!</h3>
-              <p className="text-sm text-green-700">Share the link and PIN code with your client</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">Brief Created Successfully!</h3>
+              <p className="text-sm text-gray-600">Share the link and PIN code with your client</p>
             </div>
 
             {/* Client Link */}
-            <div className="space-y-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <ExternalLink className="w-4 h-4 text-blue-600" />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <ExternalLink className="w-3.5 h-3.5 text-gray-500" />
                 Client Link
               </Label>
               <div className="flex gap-2">
                 <Input
                   value={createdBrief.briefUrl}
                   readOnly
-                  className="text-xs font-mono bg-white border-gray-300"
+                  className="text-xs font-mono bg-gray-50 border-gray-200"
                 />
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => handleCopy(createdBrief.briefUrl, 'url')}
-                  className="shrink-0 bg-white hover:bg-gray-100"
+                  className="shrink-0 border-gray-200"
                 >
                   {copiedField === 'url' ? (
-                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <CheckCircle className="w-4 h-4 text-green-600" />
                   ) : (
                     <Copy className="w-4 h-4" />
                   )}
@@ -188,35 +188,35 @@ export function CreateBriefModal({ open, onOpenChange, onCreateBrief, clientName
             </div>
 
             {/* PIN Code */}
-            <div className="space-y-3 bg-gradient-to-br from-indigo-50 to-purple-50 p-5 rounded-lg border-2 border-indigo-200 shadow-sm">
-              <Label className="text-sm font-semibold text-indigo-900 flex items-center gap-2">
-                <Lock className="w-4 h-4 text-indigo-600" />
+            <div className="space-y-2 p-4 rounded-lg bg-blue-50/50 border border-blue-100">
+              <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Lock className="w-3.5 h-3.5 text-gray-500" />
                 Access PIN Code
               </Label>
               <div className="flex gap-2">
                 <Input
                   value={createdBrief.accessCode}
                   readOnly
-                  className="text-center text-3xl font-mono tracking-widest bg-white border-2 border-indigo-300 text-indigo-900 font-bold h-14"
+                  className="text-center text-2xl font-mono tracking-widest bg-white border-gray-200 text-gray-900 font-semibold h-12"
                 />
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => handleCopy(createdBrief.accessCode, 'code')}
-                  className="shrink-0 bg-white hover:bg-indigo-100 border-2 border-indigo-300 h-14 px-4"
+                  className="shrink-0 border-gray-200 h-12 px-3"
                 >
                   {copiedField === 'code' ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <CheckCircle className="w-4 h-4 text-green-600" />
                   ) : (
-                    <Copy className="w-5 h-5 text-indigo-600" />
+                    <Copy className="w-4 h-4" />
                   )}
                 </Button>
               </div>
             </div>
 
             {/* Info Notice */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-900 flex items-start gap-2">
+            <div className="bg-blue-50/30 p-3 rounded-lg border border-blue-100">
+              <p className="text-sm text-gray-700 flex items-start gap-2">
                 <Globe className="w-4 h-4 mt-0.5 shrink-0 text-blue-600" />
                 <span>The client can fill out the brief using the link and PIN code. Progress will be saved automatically.</span>
               </p>
@@ -225,7 +225,7 @@ export function CreateBriefModal({ open, onOpenChange, onCreateBrief, clientName
             {/* Done Button */}
             <Button 
               onClick={handleClose} 
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md h-11"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white h-10"
             >
               Done
             </Button>

@@ -1,6 +1,6 @@
 import { Card, CardContent } from "./ui/card";
 import { Client, Task } from "../types";
-import { Building2, User, CheckCircle2, AlertCircle, Mail, Phone, MoreVertical, Archive, ArchiveRestore, GripVertical } from "lucide-react";
+import { Building2, User, CheckCircle2, AlertCircle, Mail, Phone, MoreVertical, Archive, ArchiveRestore, GripVertical, Edit } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { formatDateTimeCompact } from "../utils/dateUtils";
 import {
@@ -16,17 +16,17 @@ interface ClientCardProps {
   onClick: () => void;
   onTaskBadgeClick?: () => void;
   onToggleArchive?: (clientId: string) => void;
+  onEditClient?: (clientId: string) => void;
   tasks?: Task[];
 }
 
-export function ClientCard({ client, onClick, onTaskBadgeClick, onToggleArchive, tasks = [] }: ClientCardProps) {
-  const [{ isDragging }, drag] = useDrag(() => ({
+export function ClientCard({ client, onClick, onTaskBadgeClick, onToggleArchive, onEditClient, tasks = [] }: ClientCardProps) {
+  const [{ isDragging }, drag, preview] = useDrag(() => ({
     type: 'CLIENT_CARD',
     item: { clientId: client.id, isArchived: !!client.archived },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-    canDrag: () => true,
   }), [client.id, client.archived]);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -53,7 +53,7 @@ export function ClientCard({ client, onClick, onTaskBadgeClick, onToggleArchive,
   });
 
   return (
-    <div ref={drag} style={{ cursor: isDragging ? 'grabbing' : 'grab' }}>
+    <div ref={preview}>
       <Card 
         className={`group hover:shadow-md transition-all duration-200 border border-gray-200 bg-white overflow-hidden ${
           isDragging ? 'opacity-50 scale-95' : ''
@@ -65,7 +65,9 @@ export function ClientCard({ client, onClick, onTaskBadgeClick, onToggleArchive,
             <div className="flex-1">
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="flex items-center gap-1.5">
-                  <GripVertical className="w-4 h-4 text-gray-400 cursor-grab active:cursor-grabbing" />
+                  <div ref={drag} className="cursor-grab active:cursor-grabbing">
+                    <GripVertical className="w-4 h-4 text-gray-400" />
+                  </div>
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                     <User className="w-5 h-5 text-blue-600" />
                   </div>
@@ -82,11 +84,23 @@ export function ClientCard({ client, onClick, onTaskBadgeClick, onToggleArchive,
                 <DropdownMenu>
                   <DropdownMenuTrigger 
                     onClick={(e) => e.stopPropagation()}
-                    className="h-8 w-8 p-0 hover:bg-gray-100 rounded-md inline-flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="h-8 w-8 p-0 hover:bg-gray-100 rounded-md inline-flex items-center justify-center transition-colors focus:outline-none focus:ring-[0.5px] focus:ring-blue-500 focus:ring-offset-0"
                   >
                     <MoreVertical className="w-4 h-4 text-gray-500" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuContent align="end" className="w-40 bg-white border-gray-200">
+                    {onEditClient && (
+                      <DropdownMenuItem 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditClient(client.id);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem 
                       onClick={(e) => {
                         e.stopPropagation();

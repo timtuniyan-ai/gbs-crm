@@ -246,4 +246,68 @@ html {
   .gradient-red {
     background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
   }
+
+  /* Прозрачные обводки для инпутов в брифе */
+  .brief-input {
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+
+  .brief-input:focus {
+    border-color: rgba(59, 130, 246, 0.3) !important;
+  }
+
+  /* Серые полупрозрачные placeholder для всех инпутов */
+  input::placeholder,
+  textarea::placeholder {
+    color: rgba(95, 100, 107, 0.6) !important;
+    opacity: 1 !important;
+  }
+
+  input::-webkit-input-placeholder,
+  textarea::-webkit-input-placeholder {
+    color: rgba(95, 100, 107, 0.6) !important;
+    opacity: 1 !important;
+  }
+
+  input::-moz-placeholder,
+  textarea::-moz-placeholder {
+    color: rgba(95, 100, 107, 0.6) !important;
+    opacity: 1 !important;
+  }
+
+  /* Американский формат даты MM/DD/YYYY для всех date inputs */
+  /* Принудительно устанавливаем американскую локаль для date inputs */
+  input[type="date"] {
+    text-align: left;
+  }
+
+  /* Для WebKit браузеров (Chrome, Safari, Edge) */
+  input[type="date"]::-webkit-datetime-edit {
+    display: flex;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-month-field {
+    order: 1;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-text:first-child {
+    order: 2;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-day-field {
+    order: 3;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-text:nth-of-type(2) {
+    order: 4;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-year-field {
+    order: 5;
+  }
+
+  /* Явно указываем формат через placeholder */
+  input[type="date"]::-webkit-datetime-edit-text {
+    padding: 0 2px;
+  }
 }

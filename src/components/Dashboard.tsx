@@ -13,10 +13,11 @@ interface DashboardProps {
   onAddClientClick: () => void;
   onClientClick: (client: Client, defaultTab?: "info" | "notes" | "tasks") => void;
   onToggleArchive: (clientId: string) => void;
+  onEditClient: (clientId: string) => void;
   onLogout: () => void;
 }
 
-export function Dashboard({ clients, tasks, onAddClientClick, onClientClick, onToggleArchive, onLogout }: DashboardProps) {
+export function Dashboard({ clients, tasks, onAddClientClick, onClientClick, onToggleArchive, onEditClient, onLogout }: DashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"active" | "archived">("active");
 
@@ -85,8 +86,8 @@ export function Dashboard({ clients, tasks, onAddClientClick, onClientClick, onT
         <div className="container mx-auto px-6 py-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shrink-0 border border-gray-200">
-                <img src="/logo.svg" alt="GBS Logo" className="w-6 h-6 object-contain" />
+              <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shrink-0 border border-gray-200">
+                <img src="/logo.svg" alt="GBS Logo" className="w-12 h-12 object-contain" />
               </div>
               <div>
                 <h1 className="text-gray-900 tracking-tight">GRAND BUSINESS SOLUTIONS</h1>
@@ -138,20 +139,28 @@ export function Dashboard({ clients, tasks, onAddClientClick, onClientClick, onT
           <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as "active" | "archived")} className="w-full">
             <div className="flex items-center justify-between mb-6">
               <TabsList className="bg-gray-50 border border-gray-300 p-1 rounded-lg h-10 shadow-sm">
-                <TabsTrigger 
-                  value="active" 
-                  className="rounded-md text-sm flex items-center gap-2 px-4 h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
-                >
-                  <Users className="w-4 h-4" />
-                  Active ({activeClients.length})
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="archived" 
-                  className="rounded-md text-sm flex items-center gap-2 px-4 h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
-                >
-                  <Archive className="w-4 h-4" />
-                  Archive ({archivedClients.length})
-                </TabsTrigger>
+                <div ref={dropActive}>
+                  <TabsTrigger 
+                    value="active" 
+                    className={`rounded-md text-sm flex items-center gap-2 px-4 h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm ${
+                      isOverActive ? 'ring-2 ring-blue-400 bg-blue-100' : ''
+                    }`}
+                  >
+                    <Users className="w-4 h-4" />
+                    Active ({activeClients.length})
+                  </TabsTrigger>
+                </div>
+                <div ref={dropArchive}>
+                  <TabsTrigger 
+                    value="archived" 
+                    className={`rounded-md text-sm flex items-center gap-2 px-4 h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm ${
+                      isOverArchive ? 'ring-2 ring-gray-400 bg-gray-200' : ''
+                    }`}
+                  >
+                    <Archive className="w-4 h-4" />
+                    Archive ({archivedClients.length})
+                  </TabsTrigger>
+                </div>
               </TabsList>
 
               {(activeTab === "active" ? activeClients.length : archivedClients.length) > 0 && (
@@ -169,12 +178,7 @@ export function Dashboard({ clients, tasks, onAddClientClick, onClientClick, onT
             </div>
 
             <TabsContent value="active" className="mt-0">
-              <div 
-                ref={dropActive}
-                className={`min-h-[400px] rounded-lg transition-all ${
-                  isOverActive ? 'bg-blue-50 border-2 border-blue-300 border-dashed' : ''
-                }`}
-              >
+              <div className="min-h-[400px] rounded-lg">
                 {activeClients.length === 0 ? (
                   <div className="text-center py-20">
                     <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -208,6 +212,7 @@ export function Dashboard({ clients, tasks, onAddClientClick, onClientClick, onT
                         onClick={() => onClientClick(client)}
                         onTaskBadgeClick={() => onClientClick(client, "tasks")}
                         onToggleArchive={onToggleArchive}
+                        onEditClient={onEditClient}
                       />
                     ))}
                   </div>
@@ -216,12 +221,7 @@ export function Dashboard({ clients, tasks, onAddClientClick, onClientClick, onT
             </TabsContent>
 
             <TabsContent value="archived" className="mt-0">
-              <div 
-                ref={dropArchive}
-                className={`min-h-[400px] rounded-lg transition-all ${
-                  isOverArchive ? 'bg-gray-100 border-2 border-gray-400 border-dashed' : ''
-                }`}
-              >
+              <div className="min-h-[400px] rounded-lg">
                 {archivedClients.length === 0 ? (
                   <div className="text-center py-20">
                     <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -255,6 +255,7 @@ export function Dashboard({ clients, tasks, onAddClientClick, onClientClick, onT
                         onClick={() => onClientClick(client)}
                         onTaskBadgeClick={() => onClientClick(client, "tasks")}
                         onToggleArchive={onToggleArchive}
+                        onEditClient={onEditClient}
                       />
                     ))}
                   </div>

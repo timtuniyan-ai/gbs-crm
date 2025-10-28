@@ -5,6 +5,7 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { LoginForm } from "./components/LoginForm";
 import { Dashboard } from "./components/Dashboard";
 import { AddClientModal } from "./components/AddClientModal";
+import { EditClientModal } from "./components/EditClientModal";
 import { ClientDetailsModal } from "./components/ClientDetailsModal";
 import { BriefPublicPage } from "./components/BriefPublicPage";
 import { Client, Note, Task } from "./types";
@@ -18,6 +19,8 @@ function CRMApp() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
+  const [isEditClientModalOpen, setIsEditClientModalOpen] = useState(false);
+  const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [defaultTab, setDefaultTab] = useState<"info" | "notes" | "tasks">("info");
   const [loading, setLoading] = useState(true);
@@ -100,6 +103,33 @@ function CRMApp() {
       setClients([newClient, ...clients]);
     } catch (error) {
       console.error('Error adding client:', error);
+    }
+  };
+
+  const handleUpdateClient = async (clientId: string, updates: Partial<Omit<Client, "id" | "createdAt">>) => {
+    try {
+      const updatedClient = await clientsApi.update(clientId, updates);
+      setClients(clients.map(client => client.id === clientId ? updatedClient : client));
+      if (selectedClient?.id === clientId) {
+        setSelectedClient(updatedClient);
+      }
+    } catch (error) {
+      console.error('Error updating client:', error);
+    }
+  };
+
+  const handleEditClient = (clientId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    if (client) {
+      setClientToEdit(client);
+      setIsEditClientModalOpen(true);
+    }
+  };
+
+  const handleEditClientFromDetails = () => {
+    if (selectedClient) {
+      setClientToEdit(selectedClient);
+      setIsEditClientModalOpen(true);
     }
   };
 
@@ -213,6 +243,7 @@ function CRMApp() {
         onAddClientClick={() => setIsAddClientModalOpen(true)}
         onClientClick={handleClientClick}
         onToggleArchive={handleToggleArchive}
+        onEditClient={handleEditClient}
         onLogout={handleLogout}
       />
 
@@ -220,6 +251,13 @@ function CRMApp() {
         open={isAddClientModalOpen}
         onOpenChange={setIsAddClientModalOpen}
         onAddClient={handleAddClient}
+      />
+
+      <EditClientModal
+        open={isEditClientModalOpen}
+        onOpenChange={setIsEditClientModalOpen}
+        client={clientToEdit}
+        onUpdateClient={handleUpdateClient}
       />
 
       <ClientDetailsModal
@@ -240,6 +278,7 @@ function CRMApp() {
         onUpdateTask={handleUpdateTask}
         onDeleteTask={handleDeleteTask}
         onToggleArchive={handleToggleArchive}
+        onEditClient={handleEditClientFromDetails}
         defaultTab={defaultTab}
       />
     </DndProvider>

@@ -8,7 +8,7 @@ import { TasksSection } from "./TasksSection";
 import { CreateBriefModal } from "./CreateBriefModal";
 import { BriefDetailsModal } from "./BriefDetailsModal";
 import { Badge } from "./ui/badge";
-import { Mail, Phone, Building2, FileText, User, Archive, ArchiveRestore, Plus } from "lucide-react";
+import { Mail, Phone, Building2, FileText, User, Archive, ArchiveRestore, Plus, Edit } from "lucide-react";
 import { formatDateTimeCompact, formatDate } from "../utils/dateUtils";
 import { briefsApi } from "../../lib/api";
 import {
@@ -32,6 +32,7 @@ interface ClientDetailsModalProps {
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
   onDeleteTask: (taskId: string) => void;
   onToggleArchive: (clientId: string) => void;
+  onEditClient: () => void;
   defaultTab?: "info" | "notes" | "tasks" | "briefs";
 }
 
@@ -48,6 +49,7 @@ export function ClientDetailsModal({
   onUpdateTask,
   onDeleteTask,
   onToggleArchive,
+  onEditClient,
   defaultTab = "info",
 }: ClientDetailsModalProps) {
   const [activeTab, setActiveTab] = useState(defaultTab);
@@ -140,28 +142,40 @@ export function ClientDetailsModal({
               </Tabs>
             </div>
 
-            <Button 
-              onClick={() => onToggleArchive(client.id)}
-              variant={client.archived ? "default" : "outline"}
-              size="sm"
-              className={`shrink-0 mr-4 ${
-                client.archived 
-                  ? "bg-green-600 hover:bg-green-700 text-white" 
-                  : ""
-              }`}
-            >
-              {client.archived ? (
-                <>
-                  <ArchiveRestore className="w-4 h-4 mr-2" />
-                  Restore
-                </>
-              ) : (
-                <>
-                  <Archive className="w-4 h-4 mr-2" />
-                  Archive
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-2 mr-4">
+              <Button 
+                onClick={onEditClient}
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit
+              </Button>
+              
+              <Button 
+                onClick={() => onToggleArchive(client.id)}
+                variant={client.archived ? "default" : "outline"}
+                size="sm"
+                className={`shrink-0 ${
+                  client.archived 
+                    ? "bg-green-600 hover:bg-green-700 text-white" 
+                    : ""
+                }`}
+              >
+                {client.archived ? (
+                  <>
+                    <ArchiveRestore className="w-4 h-4 mr-2" />
+                    Restore
+                  </>
+                ) : (
+                  <>
+                    <Archive className="w-4 h-4 mr-2" />
+                    Archive
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
@@ -466,15 +480,15 @@ export function ClientDetailsModal({
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
-                            <Badge 
-                              variant={
-                                brief.status === 'completed' ? 'default' : 
-                                brief.status === 'in_progress' ? 'secondary' : 'outline'
-                              }
-                              className="shrink-0"
+                            <Badge
+                              className={`shrink-0 font-normal ${
+                                brief.status === 'completed' ? 'bg-green-500 text-white hover:bg-green-600' : 
+                                brief.status === 'in_progress' ? 'bg-blue-500 text-white hover:bg-blue-600' : 
+                                'bg-orange-500 text-white hover:bg-orange-600'
+                              }`}
                             >
-                              {brief.status === 'completed' ? '✓ Завершен' : 
-                               brief.status === 'in_progress' ? '● В процессе' : '○ Создан'}
+                              {brief.status === 'completed' ? '✓ Completed' : 
+                               brief.status === 'in_progress' ? '● In Progress' : '○ Created'}
                             </Badge>
                             <span className="text-xs text-gray-500 shrink-0">
                               {brief.language === 'ru' ? '🇷🇺 Русский' : '🇺🇸 English'}
@@ -489,11 +503,11 @@ export function ClientDetailsModal({
                           
                           <div className="flex flex-col gap-1">
                             <p className="text-xs text-gray-600">
-                              Создан: {formatDateTimeCompact(brief.createdAt)}
+                              Created: {formatDateTimeCompact(brief.createdAt)}
                             </p>
                             {brief.completedAt && (
                               <p className="text-xs text-green-600">
-                                Завершен: {formatDateTimeCompact(brief.completedAt)}
+                                Completed: {formatDateTimeCompact(brief.completedAt)}
                               </p>
                             )}
                             {brief.status !== 'created' && (
