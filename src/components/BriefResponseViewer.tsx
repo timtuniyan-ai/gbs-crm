@@ -1,10 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
 import { Separator } from "./ui/separator";
-import { Building2, DollarSign, FileText, User, Shield, Calendar, CheckCircle2 } from "lucide-react";
+import { Building2, DollarSign, FileText, User, Shield, Calendar, CheckCircle2, Edit, Download, Save, X } from "lucide-react";
 import { Brief } from "../types";
+import { briefsApi } from "../../lib/api";
 
 interface BriefResponseViewerProps {
   open: boolean;
@@ -13,9 +18,13 @@ interface BriefResponseViewerProps {
 }
 
 export function BriefResponseViewer({ open, onOpenChange, brief }: BriefResponseViewerProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedData, setEditedData] = useState<any>({});
+  const [isSaving, setIsSaving] = useState(false);
+  
   if (!brief) return null;
 
-  const formData = brief.data || {};
+  const formData = isEditing ? editedData : (brief.data || {});
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Не указано';
@@ -28,22 +37,183 @@ export function BriefResponseViewer({ open, onOpenChange, brief }: BriefResponse
     return `$${Number(value).toLocaleString('en-US')}`;
   };
 
+  const handleExportToTxt = () => {
+    let content = '═══════════════════════════════════════════════════════\n';
+    content += '              COMPLETED BRIEF RESPONSES\n';
+    content += '═══════════════════════════════════════════════════════\n\n';
+    content += `Created: ${formatDate(brief.createdAt.toString())}\n`;
+    if (brief.completedAt) {
+      content += `Completed: ${formatDate(brief.completedAt.toString())}\n`;
+    }
+    content += '\n\n';
+
+    // Section 1: Business Info
+    content += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    content += 'РАЗДЕЛ 1: ИНФОРМАЦИЯ О БИЗНЕСЕ\n';
+    content += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+    content += `Юридическое Название: ${formData.legalName || 'Не указано'}\n`;
+    content += `DBA / Торговое Название: ${formData.dbaName || 'Не указано'}\n`;
+    content += `Федеральный EIN: ${formData.ein || 'Не указано'}\n`;
+    content += `Дата Основания: ${formatDate(formData.foundedDate)}\n`;
+    content += `Отрасль / Код NAICS: ${formData.industry || 'Не указано'}\n`;
+    content += `Адрес Бизнеса: ${formData.businessAddress || 'Не указано'}\n`;
+    content += `Город: ${formData.city || 'Не указано'}\n`;
+    content += `Штат: ${formData.state || 'Не указано'}\n`;
+    content += `ZIP: ${formData.zip || 'Не указано'}\n`;
+    content += `Телефон Бизнеса: ${formData.businessPhone || 'Не указано'}\n`;
+    content += `Email Бизнеса: ${formData.businessEmail || 'Не указано'}\n`;
+    content += `Веб-сайт: ${formData.website || 'Не указано'}\n`;
+    content += `Количество Сотрудников: ${formData.employees || 'Не указано'}\n`;
+    content += `Ежемесячная Выручка: ${formatCurrency(formData.monthlyRevenue)}\n`;
+    content += `Годовая Выручка: ${formatCurrency(formData.yearlyRevenue)}\n\n`;
+
+    // Section 2: Financing Request
+    content += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    content += 'РАЗДЕЛ 2: ЗАПРОС НА ФИНАНСИРОВАНИЕ\n';
+    content += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+    content += `Запрашиваемая Сумма: ${formatCurrency(formData.requestedAmount)}\n`;
+    content += `Цель Финансирования: ${formData.fundingPurpose || 'Не указано'}\n`;
+    content += `Желаемая Структура Платежей: ${formData.desiredPaymentStructure || 'Не указано'}\n`;
+    content += `Срок: ${formData.term || 'Не указано'}\n\n`;
+
+    // Section 3: Additional Documents
+    content += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    content += 'РАЗДЕЛ 3: ДОПОЛНИТЕЛЬНЫЕ ДОКУМЕНТЫ\n';
+    content += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+    content += `Банковские Выписки: ${formData.bankStatements || 'Не загружено'}\n`;
+    content += `Налоговые Декларации: ${formData.taxReturns || 'Не загружено'}\n`;
+    content += `Другие Документы: ${formData.otherDocuments || 'Не загружено'}\n\n`;
+
+    // Section 4: Owner Info
+    content += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    content += 'РАЗДЕЛ 4: ИНФОРМАЦИЯ О ВЛАДЕЛЬЦЕ\n';
+    content += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+    content += `Полное Имя: ${formData.ownerName || 'Не указано'}\n`;
+    content += `Email: ${formData.ownerEmail || 'Не указано'}\n`;
+    content += `Телефон: ${formData.ownerPhone || 'Не указано'}\n`;
+    content += `SSN: ${formData.ssn || 'Не указано'}\n`;
+    content += `Дата Рождения: ${formatDate(formData.dob)}\n`;
+    content += `Домашний Адрес: ${formData.homeAddress || 'Не указано'}\n`;
+    content += `Процент Владения: ${formData.ownershipPercentage || 'Не указано'}%\n`;
+    content += `Кредитный Рейтинг: ${formData.creditScore || 'Не указано'}\n\n`;
+
+    // Section 5: Declaration
+    content += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    content += 'РАЗДЕЛ 5: ДЕКЛАРАЦИЯ И СОГЛАСИЕ\n';
+    content += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+    content += `Подпись: ${formData.signature || 'Не указано'}\n`;
+    content += `Дата: ${formatDate(formData.signatureDate)}\n\n`;
+
+    content += '═══════════════════════════════════════════════════════\n';
+    content += '                   END OF BRIEF\n';
+    content += '═══════════════════════════════════════════════════════\n';
+
+    // Create and download file
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `brief-${formData.legalName || 'response'}-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleEdit = () => {
+    setEditedData({ ...brief.data });
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setEditedData({});
+    setIsEditing(false);
+  };
+
+  const handleSave = async () => {
+    if (!brief) return;
+    
+    setIsSaving(true);
+    try {
+      await briefsApi.update(brief.id, { data: editedData });
+      brief.data = editedData; // Update local data
+      setIsEditing(false);
+      alert('Изменения успешно сохранены!');
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      alert('Ошибка при сохранении изменений');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleFieldChange = (field: string, value: any) => {
+    setEditedData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-[90vw] max-h-[90vh] flex flex-col bg-white overflow-hidden">
-        <DialogHeader className="shrink-0">
-          <div className="flex items-center justify-between">
+        <DialogHeader className="shrink-0 border-b border-gray-100 pb-4">
+          <div className="flex items-center justify-between mb-3">
             <DialogTitle className="text-2xl">Completed Brief</DialogTitle>
             <Badge variant="default" className="bg-green-600">
               <CheckCircle2 className="w-3 h-3 mr-1" />
               Completed
             </Badge>
           </div>
-          <div className="flex items-center gap-4 text-sm text-gray-600 mt-2">
-            <span>Created: {formatDate(brief.createdAt.toString())}</span>
-            {brief.completedAt && (
-              <span>Completed: {formatDate(brief.completedAt.toString())}</span>
-            )}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 text-sm text-gray-600">
+              <span>Created: {formatDate(brief.createdAt.toString())}</span>
+              {brief.completedAt && (
+                <span>Completed: {formatDate(brief.completedAt.toString())}</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {isEditing ? (
+                <>
+                  <Button
+                    onClick={handleCancel}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1.5 border-gray-300 hover:bg-gray-50 h-8 px-3 text-sm"
+                    disabled={isSaving}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Отмена
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    size="sm"
+                    className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 h-8 px-3 text-sm"
+                    disabled={isSaving}
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    {isSaving ? 'Сохранение...' : 'Сохранить'}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    onClick={handleEdit}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1.5 border-gray-300 hover:bg-gray-50 h-8 px-3 text-sm"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                    Редактировать
+                  </Button>
+                  <Button
+                    onClick={handleExportToTxt}
+                    size="sm"
+                    className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 h-8 px-3 text-sm"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Выгрузить TXT
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </DialogHeader>
 
@@ -64,21 +234,21 @@ export function BriefResponseViewer({ open, onOpenChange, brief }: BriefResponse
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="grid md:grid-cols-2 gap-4">
-                  <InfoField label="Юридическое Название" value={formData.legalName} />
-                  <InfoField label="DBA / Торговое Название" value={formData.dbaName} />
-                  <InfoField label="Федеральный EIN" value={formData.ein} />
-                  <InfoField label="Дата Основания" value={formatDate(formData.foundedDate)} />
-                  <InfoField label="Отрасль / Код NAICS" value={formData.industry} className="md:col-span-2" />
-                  <InfoField label="Адрес Бизнеса" value={formData.businessAddress} className="md:col-span-2" />
-                  <InfoField label="Город" value={formData.city} />
-                  <InfoField label="Штат" value={formData.state} />
-                  <InfoField label="ZIP" value={formData.zip} />
-                  <InfoField label="Телефон Бизнеса" value={formData.businessPhone} />
-                  <InfoField label="Email Бизнеса" value={formData.businessEmail} />
-                  <InfoField label="Веб-сайт" value={formData.website} />
-                  <InfoField label="Количество Сотрудников" value={formData.employees} />
-                  <InfoField label="Ежемесячная Выручка" value={formatCurrency(formData.monthlyRevenue)} />
-                  <InfoField label="Годовая Выручка" value={formatCurrency(formData.yearlyRevenue)} />
+                  <InfoField label="Юридическое Название" value={formData.legalName} isEditing={isEditing} fieldName="legalName" onChange={handleFieldChange} />
+                  <InfoField label="DBA / Торговое Название" value={formData.dbaName} isEditing={isEditing} fieldName="dbaName" onChange={handleFieldChange} />
+                  <InfoField label="Федеральный EIN" value={formData.ein} isEditing={isEditing} fieldName="ein" onChange={handleFieldChange} />
+                  <InfoField label="Дата Основания" value={isEditing ? formData.foundedDate : formatDate(formData.foundedDate)} isEditing={isEditing} fieldName="foundedDate" onChange={handleFieldChange} />
+                  <InfoField label="Отрасль / Код NAICS" value={formData.industry} className="md:col-span-2" isEditing={isEditing} fieldName="industry" onChange={handleFieldChange} />
+                  <InfoField label="Адрес Бизнеса" value={formData.businessAddress} className="md:col-span-2" isEditing={isEditing} fieldName="businessAddress" onChange={handleFieldChange} />
+                  <InfoField label="Город" value={formData.city} isEditing={isEditing} fieldName="city" onChange={handleFieldChange} />
+                  <InfoField label="Штат" value={formData.state} isEditing={isEditing} fieldName="state" onChange={handleFieldChange} />
+                  <InfoField label="ZIP" value={formData.zip} isEditing={isEditing} fieldName="zip" onChange={handleFieldChange} />
+                  <InfoField label="Телефон Бизнеса" value={formData.businessPhone} isEditing={isEditing} fieldName="businessPhone" onChange={handleFieldChange} />
+                  <InfoField label="Email Бизнеса" value={formData.businessEmail} isEditing={isEditing} fieldName="businessEmail" onChange={handleFieldChange} />
+                  <InfoField label="Веб-сайт" value={formData.website} isEditing={isEditing} fieldName="website" onChange={handleFieldChange} />
+                  <InfoField label="Количество Сотрудников" value={formData.employees} isEditing={isEditing} fieldName="employees" onChange={handleFieldChange} />
+                  <InfoField label="Ежемесячная Выручка" value={isEditing ? formData.monthlyRevenue : formatCurrency(formData.monthlyRevenue)} isEditing={isEditing} fieldName="monthlyRevenue" onChange={handleFieldChange} />
+                  <InfoField label="Годовая Выручка" value={isEditing ? formData.yearlyRevenue : formatCurrency(formData.yearlyRevenue)} isEditing={isEditing} fieldName="yearlyRevenue" onChange={handleFieldChange} />
                 </div>
               </CardContent>
             </Card>
@@ -100,27 +270,27 @@ export function BriefResponseViewer({ open, onOpenChange, brief }: BriefResponse
                 <div className="space-y-4">
                   <InfoField 
                     label="Запрашиваемая Сумма" 
-                    value={formatCurrency(formData.requestedAmount)}
+                    value={isEditing ? formData.requestedAmount : formatCurrency(formData.requestedAmount)}
                     className="text-lg font-semibold text-green-700"
+                    isEditing={isEditing}
+                    fieldName="requestedAmount"
+                    onChange={handleFieldChange}
                   />
                   
                   <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">Цели Кредита:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.loanPurpose?.map((purpose: string) => (
-                        <Badge key={purpose} variant="secondary">
-                          {purpose}
-                        </Badge>
-                      )) || <span className="text-sm text-gray-500">Не указано</span>}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">Детальное Описание:</p>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Детальное Описание:</Label>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap">
-                        {formData.purposeDetails || 'Не указано'}
-                      </p>
+                      {isEditing ? (
+                        <Textarea
+                          value={formData.purposeDetails || ''}
+                          onChange={(e) => handleFieldChange('purposeDetails', e.target.value)}
+                          className="min-h-[100px] bg-white"
+                        />
+                      ) : (
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                          {formData.purposeDetails || 'Не указано'}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -219,20 +389,20 @@ export function BriefResponseViewer({ open, onOpenChange, brief }: BriefResponse
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="grid md:grid-cols-2 gap-4">
-                  <InfoField label="Полное Имя" value={formData.ownerFullName} />
-                  <InfoField label="Должность" value={formData.ownerTitle} />
-                  <InfoField label="Процент Владения" value={formData.ownershipPercent ? `${formData.ownershipPercent}%` : ''} />
-                  <InfoField label="SSN/ITIN" value={formData.ssn ? '***-**-' + formData.ssn.slice(-4) : 'Не указано'} />
-                  <InfoField label="Дата Рождения" value={formatDate(formData.ownerDob)} />
-                  <InfoField label="Водительские Права" value={formData.driverLicense} />
-                  <InfoField label="Штат (DL)" value={formData.dlState} />
-                  <InfoField label="Домашний Адрес" value={formData.homeAddress} className="md:col-span-2" />
-                  <InfoField label="Город" value={formData.homeCity} />
-                  <InfoField label="Штат" value={formData.homeState} />
-                  <InfoField label="ZIP" value={formData.homeZip} />
-                  <InfoField label="Личный Телефон" value={formData.personalPhone} />
-                  <InfoField label="Личный Email" value={formData.personalEmail} />
-                  <InfoField label="Кредитный Рейтинг" value={getCreditScoreLabel(formData.creditScore)} className="md:col-span-2" />
+                  <InfoField label="Полное Имя" value={formData.ownerFullName} isEditing={isEditing} fieldName="ownerFullName" onChange={handleFieldChange} />
+                  <InfoField label="Должность" value={formData.ownerTitle} isEditing={isEditing} fieldName="ownerTitle" onChange={handleFieldChange} />
+                  <InfoField label="Процент Владения" value={isEditing ? formData.ownershipPercent : (formData.ownershipPercent ? `${formData.ownershipPercent}%` : '')} isEditing={isEditing} fieldName="ownershipPercent" onChange={handleFieldChange} />
+                  <InfoField label="SSN/ITIN" value={isEditing ? formData.ssn : (formData.ssn ? '***-**-' + formData.ssn.slice(-4) : 'Не указано')} isEditing={isEditing} fieldName="ssn" onChange={handleFieldChange} />
+                  <InfoField label="Дата Рождения" value={isEditing ? formData.ownerDob : formatDate(formData.ownerDob)} isEditing={isEditing} fieldName="ownerDob" onChange={handleFieldChange} />
+                  <InfoField label="Водительские Права" value={formData.driverLicense} isEditing={isEditing} fieldName="driverLicense" onChange={handleFieldChange} />
+                  <InfoField label="Штат (DL)" value={formData.dlState} isEditing={isEditing} fieldName="dlState" onChange={handleFieldChange} />
+                  <InfoField label="Домашний Адрес" value={formData.homeAddress} className="md:col-span-2" isEditing={isEditing} fieldName="homeAddress" onChange={handleFieldChange} />
+                  <InfoField label="Город" value={formData.homeCity} isEditing={isEditing} fieldName="homeCity" onChange={handleFieldChange} />
+                  <InfoField label="Штат" value={formData.homeState} isEditing={isEditing} fieldName="homeState" onChange={handleFieldChange} />
+                  <InfoField label="ZIP" value={formData.homeZip} isEditing={isEditing} fieldName="homeZip" onChange={handleFieldChange} />
+                  <InfoField label="Личный Телефон" value={formData.personalPhone} isEditing={isEditing} fieldName="personalPhone" onChange={handleFieldChange} />
+                  <InfoField label="Личный Email" value={formData.personalEmail} isEditing={isEditing} fieldName="personalEmail" onChange={handleFieldChange} />
+                  <InfoField label="Кредитный Рейтинг" value={isEditing ? formData.creditScore : getCreditScoreLabel(formData.creditScore)} className="md:col-span-2" isEditing={isEditing} fieldName="creditScore" onChange={handleFieldChange} />
                 </div>
               </CardContent>
             </Card>
@@ -288,11 +458,33 @@ export function BriefResponseViewer({ open, onOpenChange, brief }: BriefResponse
 }
 
 // Helper Components
-function InfoField({ label, value, className = "" }: { label: string; value: any; className?: string }) {
+function InfoField({ 
+  label, 
+  value, 
+  className = "", 
+  isEditing = false, 
+  fieldName = "", 
+  onChange 
+}: { 
+  label: string; 
+  value: any; 
+  className?: string;
+  isEditing?: boolean;
+  fieldName?: string;
+  onChange?: (field: string, value: any) => void;
+}) {
   return (
     <div className={`bg-gray-50 p-3 rounded-lg ${className}`}>
-      <p className="text-xs font-medium text-gray-600 mb-1">{label}</p>
-      <p className="text-sm text-gray-900 font-medium">{value || 'Не указано'}</p>
+      <Label className="text-xs font-medium text-gray-600 mb-1 block">{label}</Label>
+      {isEditing && onChange && fieldName ? (
+        <Input
+          value={value || ''}
+          onChange={(e) => onChange(fieldName, e.target.value)}
+          className="h-8 text-sm bg-white"
+        />
+      ) : (
+        <p className="text-sm text-gray-900 font-medium">{value || 'Не указано'}</p>
+      )}
     </div>
   );
 }

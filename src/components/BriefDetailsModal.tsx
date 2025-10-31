@@ -215,6 +215,15 @@ export function BriefDetailsModal({ open, onOpenChange, brief, onDelete }: Brief
               <Trash2 className="w-4 h-4" />
               {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
+            {brief.status === 'completed' && (
+              <Button
+                onClick={() => setShowResponseViewer(true)}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+              >
+                <Eye className="w-4 h-4" />
+                View Responses
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
