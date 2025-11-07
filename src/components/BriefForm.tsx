@@ -99,11 +99,11 @@ export function BriefForm({ brief, onComplete }: BriefFormProps) {
       case 1:
         return <Step1BusinessInfo formData={formData} updateField={updateField} />;
       case 2:
-        return <Step2FinancingRequest formData={formData} updateField={updateField} />;
-      case 3:
         return <Step3CurrentDebts formData={formData} updateField={updateField} />;
-      case 4:
+      case 3:
         return <Step4OwnerInfo formData={formData} updateField={updateField} />;
+      case 4:
+        return <Step2FinancingRequest formData={formData} updateField={updateField} />;
       case 5:
         return <Step5Consent formData={formData} updateField={updateField} />;
       default:
@@ -119,7 +119,7 @@ export function BriefForm({ brief, onComplete }: BriefFormProps) {
           <img 
             src="/logo.svg" 
             alt="Grand Business Solutions Logo" 
-            className="w-36 h-36 mx-auto mb-4 object-contain"
+            className="w-48 h-48 mx-auto mb-4 object-contain"
           />
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             GRAND BUSINESS SOLUTIONS
@@ -241,9 +241,9 @@ export function BriefForm({ brief, onComplete }: BriefFormProps) {
 function getStepTitle(step: number): string {
   const titles = [
     "Информация о бизнесе",
-    "Запрос на финансирование",
     "Текущие долги и история",
     "Информация о владельце",
+    "Запрос на финансирование",
     "Разрешение и согласие"
   ];
   return titles[step - 1] || "";
@@ -282,11 +282,8 @@ function Step0Welcome() {
 
         {/* Приветствие */}
         <div className="space-y-4">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">
-              Добро Пожаловать в Grand Business Solutions
-            </h3>
-            <p className="text-gray-700 leading-relaxed">
+          <div className="px-4 py-6">
+            <p className="text-lg text-gray-800 leading-relaxed font-medium text-justify">
               Благодарим вас за выбор Grand Business Solutions в качестве надёжного партнёра для получения оптимального бизнес-финансирования. Мы понимаем, что каждый бизнес уникален, и мы здесь, чтобы подобрать для вас идеальное решение из нашей сети <span className="font-semibold text-blue-600">75+ проверенных партнёров-кредиторов</span>.
             </p>
           </div>
@@ -297,7 +294,7 @@ function Step0Welcome() {
               <FileText className="w-5 h-5 text-amber-600" />
               Как заполнить эту заявку:
             </h4>
-            <p className="text-gray-700 leading-relaxed text-sm">
+            <p className="text-gray-700 leading-relaxed text-sm text-justify">
               Этот краткий опросник займёт у вас приблизительно <span className="font-semibold">10-15 минут</span>. Пожалуйста, предоставьте точную и полную информацию, чтобы помочь нам найти для вас лучшие варианты финансирования. Вся информация <span className="font-semibold text-amber-700">строго конфиденциальна</span> и будет передана только одобренным кредитным партнёрам в рамках процесса квалификации.
             </p>
           </div>
@@ -308,7 +305,7 @@ function Step0Welcome() {
               <Shield className="w-5 h-5 text-green-600" />
               Что происходит дальше:
             </h4>
-            <p className="text-gray-700 leading-relaxed text-sm">
+            <p className="text-gray-700 leading-relaxed text-sm text-justify">
               После того, как вы отправите эту заявку, наша команда рассмотрит вашу информацию в течение ближайшего времени и свяжется с вами для обсуждения вариантов финансирования. Мы проведём вас через каждый этап процесса, чтобы обеспечить получение необходимого вашему бизнесу финансирования.
             </p>
           </div>
@@ -332,19 +329,19 @@ function Step1BusinessInfo({ formData, updateField }: any) {
   return (
     <>
       <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Building2 className="w-5 h-5 text-white" />
+        <div className="text-center">
+          <div className="flex justify-center mb-2">
+            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-white" />
+            </div>
           </div>
-          <div>
-            <CardTitle>Раздел 1 — Информация о Бизнесе</CardTitle>
-            <CardDescription>Расскажите нам о вашей компании</CardDescription>
-          </div>
+          <CardTitle>Раздел 1 — Информация о Бизнесе</CardTitle>
+          <CardDescription>Расскажите нам о вашей компании</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="legalName">Юридическое Название Компании</Label>
+          <Label htmlFor="legalName">Полное Название Компании</Label>
           <Input
             id="legalName"
             placeholder="ABC Construction LLC"
@@ -352,7 +349,7 @@ function Step1BusinessInfo({ formData, updateField }: any) {
             onChange={(e) => updateField('legalName', e.target.value)}
             className="brief-input"
           />
-          <p className="text-xs text-gray-500">По документам IRS</p>
+          <p className="text-xs text-gray-500">Включая организационно-правовую форму (LLC, Corp, etc.)</p>
         </div>
 
         <div className="space-y-2">
@@ -403,10 +400,10 @@ function Step1BusinessInfo({ formData, updateField }: any) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="businessAddress">Физический Адрес Бизнеса</Label>
+          <Label htmlFor="businessAddress">Зарегистрированный Бизнес Адрес</Label>
           <Input
             id="businessAddress"
-            placeholder="Адрес, по которому работает бизнес"
+            placeholder="Адрес регистрации бизнеса"
             value={formData.businessAddress || ''}
             onChange={(e) => updateField('businessAddress', e.target.value)}
             className="brief-input"
@@ -446,43 +443,6 @@ function Step1BusinessInfo({ formData, updateField }: any) {
               className="brief-input"
             />
           </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="businessPhone">Телефон Бизнеса</Label>
-            <Input
-              id="businessPhone"
-              type="tel"
-              placeholder="+1 (XXX) XXX-XXXX"
-              value={formData.businessPhone || ''}
-              onChange={(e) => updateField('businessPhone', e.target.value)}
-              className="brief-input"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="businessEmail">Email Бизнеса</Label>
-            <Input
-              id="businessEmail"
-              type="email"
-              value={formData.businessEmail || ''}
-              onChange={(e) => updateField('businessEmail', e.target.value)}
-              className="brief-input"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="website">Веб-сайт Бизнеса</Label>
-          <Input
-            id="website"
-            type="url"
-            placeholder="https://example.com"
-            value={formData.website || ''}
-            onChange={(e) => updateField('website', e.target.value)}
-            className="brief-input"
-          />
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
@@ -534,14 +494,14 @@ function Step2FinancingRequest({ formData, updateField }: any) {
   return (
     <>
       <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
-            <DollarSign className="w-5 h-5 text-white" />
+        <div className="text-center">
+          <div className="flex justify-center mb-2">
+            <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-white" />
+            </div>
           </div>
-          <div>
-            <CardTitle>Раздел 2 — Запрос на Финансирование</CardTitle>
-            <CardDescription>Расскажите о ваших потребностях в финансировании</CardDescription>
-          </div>
+          <CardTitle>Раздел 4 — Запрос на Финансирование</CardTitle>
+          <CardDescription>Расскажите о ваших потребностях в финансировании</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
@@ -562,15 +522,12 @@ function Step2FinancingRequest({ formData, updateField }: any) {
           <div className="grid md:grid-cols-2 gap-2">
             {[
               'Оборотный Капитал',
-              'Покупка Оборудования',
-              'Закупка Товаров/Инвентаря',
+              'Покупка Оборудования/Траков/Другого Инвентаря',
               'Расширение Бизнеса',
               'Консолидация/Рефинансирование Долгов',
-              'Маркетинг/Реклама',
               'Покупка Недвижимости',
               'Кредитная Линия',
-              'Заработная Плата',
-              'Сезонный Денежный Поток'
+              'Заработная Плата'
             ].map((purpose) => (
               <label key={purpose} className="flex items-center space-x-2 cursor-pointer">
                 <input
@@ -611,14 +568,14 @@ function Step3CurrentDebts({ formData, updateField }: any) {
   return (
     <>
       <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center">
-            <FileText className="w-5 h-5 text-white" />
+        <div className="text-center">
+          <div className="flex justify-center mb-2">
+            <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center">
+              <FileText className="w-5 h-5 text-white" />
+            </div>
           </div>
-          <div>
-            <CardTitle>Раздел 2.1 — Текущие Долги и История</CardTitle>
-            <CardDescription>Информация о существующем финансировании</CardDescription>
-          </div>
+          <CardTitle>Раздел 2 — Текущие Долги и История</CardTitle>
+          <CardDescription>Информация о существующем финансировании</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
@@ -864,19 +821,19 @@ function Step4OwnerInfo({ formData, updateField }: any) {
   return (
     <>
       <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
-            <User className="w-5 h-5 text-white" />
+        <div className="text-center">
+          <div className="flex justify-center mb-2">
+            <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+              <User className="w-5 h-5 text-white" />
+            </div>
           </div>
-          <div>
-            <CardTitle>Раздел 3 — Информация о Владельце</CardTitle>
-            <CardDescription>Данные главного владельца/руководителя</CardDescription>
-          </div>
+          <CardTitle>Раздел 3 — Информация о Владельце</CardTitle>
+          <CardDescription>Данные главного владельца/руководителя</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="ownerFullName">Полное Юридическое Имя</Label>
+          <Label htmlFor="ownerFullName">Полное Имя</Label>
           <Input
             id="ownerFullName"
             placeholder="Имя Фамилия"
@@ -939,30 +896,6 @@ function Step4OwnerInfo({ formData, updateField }: any) {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="driverLicense">Номер Водительских Прав</Label>
-            <Input
-              id="driverLicense"
-              value={formData.driverLicense || ''}
-              onChange={(e) => updateField('driverLicense', e.target.value)}
-              className="brief-input"
-                />
-          </div>
-
-          <div className="space-y-2">
-              <Label htmlFor="dlState">Штат</Label>
-            <Input
-              id="dlState"
-              maxLength={2}
-              placeholder="CA"
-              value={formData.dlState || ''}
-              onChange={(e) => updateField('dlState', e.target.value.toUpperCase())}
-              className="brief-input"
-                />
-          </div>
-        </div>
-
         <div className="space-y-2">
           <Label htmlFor="homeAddress">Домашний Адрес</Label>
           <Input
@@ -1009,7 +942,7 @@ function Step4OwnerInfo({ formData, updateField }: any) {
 
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="personalPhone">Личный Телефон</Label>
+            <Label htmlFor="personalPhone">Телефон</Label>
             <Input
               id="personalPhone"
               type="tel"
@@ -1020,7 +953,7 @@ function Step4OwnerInfo({ formData, updateField }: any) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="personalEmail">Личный Email</Label>
+            <Label htmlFor="personalEmail">Email</Label>
             <Input
               id="personalEmail"
               type="email"
@@ -1032,14 +965,14 @@ function Step4OwnerInfo({ formData, updateField }: any) {
         </div>
 
         <div className="space-y-2">
-          <Label>Личный Кредитный Рейтинг (самооценка)</Label>
+          <Label>Личный Кредитный Рейтинг (из онлайн банкинг приложения)</Label>
           <div className="space-y-2">
             {[
               { value: '750+', label: 'Отличный (750+)' },
-              { value: '700-749', label: 'Хороший (700–749)' },
-              { value: '650-699', label: 'Средний (650–699)' },
-              { value: '600-649', label: 'Ниже Среднего (600-649)' },
-              { value: '<600', label: 'Плохой (ниже 600)' },
+              { value: '720-750', label: 'Хороший (720-750)' },
+              { value: '680-720', label: 'Средний (680-720)' },
+              { value: '650-680', label: 'Ниже Среднего (650-680)' },
+              { value: '<650', label: 'Плохой (ниже 650)' },
               { value: 'unknown', label: 'Не знаю свой кредитный рейтинг' }
             ].map((option) => (
               <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
@@ -1064,14 +997,14 @@ function Step5Consent({ formData, updateField }: any) {
   return (
     <>
       <CardHeader className="bg-gradient-to-r from-red-50 to-rose-50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
-            <Shield className="w-5 h-5 text-white" />
+        <div className="text-center">
+          <div className="flex justify-center mb-2">
+            <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
           </div>
-          <div>
-            <CardTitle>Раздел 4 — Разрешение и Согласие</CardTitle>
-            <CardDescription>Пожалуйста, внимательно прочитайте и подтвердите</CardDescription>
-          </div>
+          <CardTitle>Раздел 5 — Разрешение и Согласие</CardTitle>
+          <CardDescription>Пожалуйста, внимательно прочитайте и подтвердите</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
