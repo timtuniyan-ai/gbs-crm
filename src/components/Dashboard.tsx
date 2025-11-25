@@ -11,7 +11,7 @@ interface DashboardProps {
   clients: Client[];
   tasks: Task[];
   onAddClientClick: () => void;
-  onClientClick: (client: Client, defaultTab?: "info" | "notes" | "tasks") => void;
+  onClientClick: (client: Client, defaultTab?: "info" | "notes" | "tasks" | "briefs" | "documents") => void;
   onToggleArchive: (clientId: string) => void;
   onEditClient: (clientId: string) => void;
   onLogout: () => void;

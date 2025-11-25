@@ -22,7 +22,7 @@ function CRMApp() {
   const [isEditClientModalOpen, setIsEditClientModalOpen] = useState(false);
   const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [defaultTab, setDefaultTab] = useState<"info" | "notes" | "tasks">("info");
+  const [defaultTab, setDefaultTab] = useState<"info" | "notes" | "tasks" | "briefs" | "documents">("info");
   const [loading, setLoading] = useState(true);
 
   // Check authentication on mount

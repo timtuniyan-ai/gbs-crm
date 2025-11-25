@@ -1,16 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Client, Note, Task, Brief, BriefDocumentType, BriefLanguage } from "../types";
+import { Client, Note, Task, Brief, BriefDocumentType, BriefLanguage, Document } from "../types";
 import { Button } from "./ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { NotesSection } from "./NotesSection";
 import { TasksSection } from "./TasksSection";
 import { CreateBriefModal } from "./CreateBriefModal";
 import { BriefDetailsModal } from "./BriefDetailsModal";
+import { DocumentCard } from "./DocumentCard";
+import { DocumentPreviewModal } from "./DocumentPreviewModal";
+import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { Badge } from "./ui/badge";
-import { Mail, Phone, Building2, FileText, User, Archive, ArchiveRestore, Plus, Edit } from "lucide-react";
+import { Mail, Phone, Building2, FileText, User, Archive, ArchiveRestore, Plus, Edit, Upload } from "lucide-react";
 import { formatDateTimeCompact, formatDate } from "../utils/dateUtils";
 import { briefsApi } from "../../lib/api";
+import { useDocuments } from "../hooks/useDocuments";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
+import { Label } from "./ui/label";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -33,7 +41,7 @@ interface ClientDetailsModalProps {
   onDeleteTask: (taskId: string) => void;
   onToggleArchive: (clientId: string) => void;
   onEditClient: () => void;
-  defaultTab?: "info" | "notes" | "tasks" | "briefs";
+  defaultTab?: "info" | "notes" | "tasks" | "briefs" | "documents";
 }
 
 export function ClientDetailsModal({
@@ -57,6 +65,22 @@ export function ClientDetailsModal({
   const [showBriefDetailsModal, setShowBriefDetailsModal] = useState(false);
   const [selectedBrief, setSelectedBrief] = useState<Brief | null>(null);
   const [briefs, setBriefs] = useState<Brief[]>([]);
+  
+  // Documents state
+  const [documentComment, setDocumentComment] = useState('');
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [showDocumentPreview, setShowDocumentPreview] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Documents hook
+  const { 
+    documents, 
+    loading: documentsLoading, 
+    uploadDocument, 
+    deleteDocument 
+  } = useDocuments('client', client?.id);
 
   // Update active tab when defaultTab changes
   useEffect(() => {
@@ -110,10 +134,81 @@ export function ClientDetailsModal({
     await loadBriefs();
   };
 
+  // Document handlers
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Загружаем все файлы
+    for (const file of fileArray) {
+      const result = await uploadDocument({
+        name: file.name,
+        comment: documentComment || undefined,
+        file: file,
+        entity_type: 'client',
+        entity_id: client.id
+      });
+
+      if (result.error) {
+        console.error('Error uploading document:', result.error);
+        errorCount++;
+      } else {
+        successCount++;
+      }
+    }
+
+    // Показываем результат
+    if (successCount > 0) {
+      toast.success(`${successCount} document${successCount > 1 ? 's' : ''} uploaded successfully!`);
+    }
+    if (errorCount > 0) {
+      toast.error(`Failed to upload ${errorCount} document${errorCount > 1 ? 's' : ''}`);
+    }
+
+    // Сброс формы
+    setDocumentComment('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteDocument = (documentId: string) => {
+    const doc = documents.find(d => d.id === documentId);
+    if (doc) {
+      setDocumentToDelete(doc);
+      setShowDeleteConfirm(true);
+    }
+  };
+
+  const confirmDeleteDocument = async () => {
+    if (!documentToDelete) return;
+    
+    const result = await deleteDocument(documentToDelete.id);
+    if (result.error) {
+      console.error('Error deleting document:', result.error);
+      toast.error('Failed to delete document', {
+        description: result.error
+      });
+    } else {
+      toast.success('Document deleted successfully!');
+    }
+    
+    setDocumentToDelete(null);
+  };
+
+  const handlePreviewDocument = (document: Document) => {
+    setSelectedDocument(document);
+    setShowDocumentPreview(true);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-none w-[92vw] h-[90vh] overflow-hidden border border-gray-200 flex flex-col p-0 bg-white">
-        <DialogHeader className="pb-4 px-6 pt-6 shrink-0 border-b border-gray-200">
+      <DialogContent className="!max-w-none w-[95vw] sm:w-[92vw] h-[95vh] sm:h-[90vh] overflow-hidden border border-gray-200 flex flex-col p-0 bg-white">
+        <DialogHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6 shrink-0 border-b border-gray-200">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4 flex-1">
               <div className="flex items-center gap-2.5">
@@ -132,32 +227,33 @@ export function ClientDetailsModal({
 
               <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
                 <div className="flex justify-center">
-                  <TabsList className="inline-flex bg-gray-50 border border-gray-300 p-1 rounded-lg h-10 shadow-sm">
-                    <TabsTrigger value="info" className="rounded-md text-sm flex items-center gap-2 px-4 h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm">Info</TabsTrigger>
-                    <TabsTrigger value="notes" className="rounded-md text-sm flex items-center gap-2 px-4 h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm">Notes</TabsTrigger>
-                    <TabsTrigger value="tasks" className="rounded-md text-sm flex items-center gap-2 px-4 h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm">Tasks</TabsTrigger>
-                    <TabsTrigger value="briefs" className="rounded-md text-sm flex items-center gap-2 px-4 h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm">Brief</TabsTrigger>
+                  <TabsList className="inline-flex bg-gray-50 border border-gray-300 p-1 rounded-lg h-9 sm:h-10 shadow-sm">
+                    <TabsTrigger value="info" className="rounded-md text-xs sm:text-sm flex items-center gap-1 sm:gap-2 px-2 sm:px-4 h-7 sm:h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm">Info</TabsTrigger>
+                    <TabsTrigger value="notes" className="rounded-md text-xs sm:text-sm flex items-center gap-1 sm:gap-2 px-2 sm:px-4 h-7 sm:h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm">Notes</TabsTrigger>
+                    <TabsTrigger value="tasks" className="rounded-md text-xs sm:text-sm flex items-center gap-1 sm:gap-2 px-2 sm:px-4 h-7 sm:h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm">Tasks</TabsTrigger>
+                    <TabsTrigger value="briefs" className="rounded-md text-xs sm:text-sm flex items-center gap-1 sm:gap-2 px-2 sm:px-4 h-7 sm:h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm">Brief</TabsTrigger>
+                    <TabsTrigger value="documents" className="rounded-md text-xs sm:text-sm flex items-center gap-1 sm:gap-2 px-2 sm:px-4 h-7 sm:h-8 transition-all text-gray-600 hover:bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm">Docs</TabsTrigger>
                   </TabsList>
                 </div>
               </Tabs>
             </div>
 
-            <div className="flex items-center gap-2 mr-4">
+            <div className="flex items-center gap-1 sm:gap-2 mr-2 sm:mr-4">
               <Button 
                 onClick={onEditClient}
                 variant="outline"
                 size="sm"
-                className="shrink-0"
+                className="shrink-0 h-8 sm:h-9"
               >
-                <Edit className="w-4 h-4 mr-2" />
-                Edit
+                <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Edit</span>
               </Button>
               
               <Button 
                 onClick={() => onToggleArchive(client.id)}
                 variant={client.archived ? "default" : "outline"}
                 size="sm"
-                className={`shrink-0 ${
+                className={`shrink-0 h-8 sm:h-9 ${
                   client.archived 
                     ? "bg-green-600 hover:bg-green-700 text-white" 
                     : ""
@@ -165,13 +261,13 @@ export function ClientDetailsModal({
               >
                 {client.archived ? (
                   <>
-                    <ArchiveRestore className="w-4 h-4 mr-2" />
-                    Restore
+                    <ArchiveRestore className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Restore</span>
                   </>
                 ) : (
                   <>
-                    <Archive className="w-4 h-4 mr-2" />
-                    Archive
+                    <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Archive</span>
                   </>
                 )}
               </Button>
@@ -179,7 +275,7 @@ export function ClientDetailsModal({
           </div>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col flex-1 overflow-hidden px-6 pb-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col flex-1 overflow-hidden px-4 sm:px-6 pb-4 sm:pb-6">
 
           <TabsContent value="info" className="mt-4 overflow-y-auto flex-1">
             <div className="grid md:grid-cols-2 gap-4">
@@ -535,6 +631,70 @@ export function ClientDetailsModal({
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="documents" className="mt-4 overflow-y-auto flex-1">
+            <div className="bg-white rounded-lg border border-gray-200">
+              <div className="p-5 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-base font-semibold text-gray-900">Documents ({documents?.length || 0})</h3>
+                  </div>
+                  <Button 
+                    onClick={() => fileInputRef.current?.click()}
+                    size="sm"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Document
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="p-5">
+                {/* Скрытый input для выбора файлов */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif"
+                />
+
+                {/* Список документов */}
+                {documentsLoading ? (
+                  <div className="text-center py-8 text-gray-500">
+                    Loading documents...
+                  </div>
+                ) : documents && documents.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                    {documents.map((document) => (
+                      <DocumentCard
+                        key={document.id}
+                        document={document}
+                        onPreview={handlePreviewDocument}
+                        onDelete={handleDeleteDocument}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No documents yet
+                    </h3>
+                    <p className="text-gray-500 mb-4">
+                      Upload documents related to this client
+                    </p>
+                    <Button onClick={() => fileInputRef.current?.click()}>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload First Document
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
 
         <CreateBriefModal
@@ -549,6 +709,19 @@ export function ClientDetailsModal({
           onOpenChange={setShowBriefDetailsModal}
           brief={selectedBrief}
           onDelete={handleDeleteBrief}
+        />
+
+        <DocumentPreviewModal
+          document={selectedDocument}
+          open={showDocumentPreview}
+          onOpenChange={setShowDocumentPreview}
+        />
+
+        <DeleteConfirmDialog
+          open={showDeleteConfirm}
+          onOpenChange={setShowDeleteConfirm}
+          onConfirm={confirmDeleteDocument}
+          itemName={documentToDelete?.name}
         />
       </DialogContent>
     </Dialog>

@@ -31,7 +31,16 @@ export interface Note {
 export interface Document {
   id: string;
   name: string;
-  description: string;
+  comment?: string;
+  file_size: string;
+  file_type: string;
+  file_url: string;
+  file_path: string;
+  entity_type: 'client';
+  entity_id: string;
+  created_at: string;
+  created_by: string;
+  created_by_name: string;
 }
 
 export interface Task {
