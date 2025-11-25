@@ -1,15 +1,16 @@
 import React from "react";
 import { Button } from "./ui/button";
-import { Trash2, File, Image, FileVideo, FileAudio, FileText, Eye } from "lucide-react";
+import { Trash2, File, Image, FileVideo, FileAudio, FileText, Eye, Edit } from "lucide-react";
 import { Document } from "../types";
 
 interface DocumentCardProps {
   document: Document;
   onPreview: (document: Document) => void;
   onDelete: (documentId: string) => void;
+  onRename: (documentId: string) => void;
 }
 
-export function DocumentCard({ document, onPreview, onDelete }: DocumentCardProps) {
+export function DocumentCard({ document, onPreview, onDelete, onRename }: DocumentCardProps) {
   const getFileIcon = (fileType: string) => {
     if (fileType.startsWith('image/')) return Image;
     if (fileType.startsWith('video/')) return FileVideo;
@@ -34,6 +35,23 @@ export function DocumentCard({ document, onPreview, onDelete }: DocumentCardProp
 
   const isImage = document.file_type.startsWith('image/');
   const isPDF = document.file_type === 'application/pdf';
+  
+  // Office документы
+  const isWord = document.file_type.includes('word') || 
+                 document.file_type.includes('msword') ||
+                 document.name.endsWith('.doc') || 
+                 document.name.endsWith('.docx');
+  const isExcel = document.file_type.includes('excel') || 
+                  document.file_type.includes('spreadsheet') ||
+                  document.name.endsWith('.xls') || 
+                  document.name.endsWith('.xlsx');
+  const isPowerPoint = document.file_type.includes('presentation') || 
+                       document.file_type.includes('powerpoint') ||
+                       document.name.endsWith('.ppt') || 
+                       document.name.endsWith('.pptx');
+  
+  const isOfficeDoc = isWord || isExcel || isPowerPoint;
+  
   const FileIcon = getFileIcon(document.file_type);
 
   return (
@@ -61,9 +79,18 @@ export function DocumentCard({ document, onPreview, onDelete }: DocumentCardProp
             {/* Overlay для PDF чтобы клик работал */}
             <div className="absolute inset-0 bg-transparent" />
           </div>
+        ) : isOfficeDoc ? (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-700">
+            <div className="text-center text-white">
+              <FileIcon className="w-10 h-10 mx-auto mb-1" />
+              <p className="text-[8px] font-medium uppercase tracking-wide">
+                {isWord ? 'Word' : isExcel ? 'Excel' : 'PowerPoint'}
+              </p>
+            </div>
+          </div>
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
-            <FileIcon className="w-10 h-10 text-blue-600" />
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+            <FileIcon className="w-10 h-10 text-gray-600" />
           </div>
         )}
         
@@ -99,12 +126,23 @@ export function DocumentCard({ document, onPreview, onDelete }: DocumentCardProp
             variant="outline"
             onClick={(e) => {
               e.stopPropagation();
+              onRename(document.id);
+            }}
+            className="flex-1 text-[10px] h-6"
+          >
+            <Edit className="w-3 h-3 mr-1" />
+            Rename
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation();
               onDelete(document.id);
             }}
-            className="flex-1 text-[10px] h-6 text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="text-[10px] h-6 text-red-600 hover:text-red-700 hover:bg-red-50"
           >
-            <Trash2 className="w-3 h-3 mr-1" />
-            Delete
+            <Trash2 className="w-3 h-3" />
           </Button>
         </div>
       </div>

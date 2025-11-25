@@ -74,6 +74,14 @@ FOR INSERT
 TO authenticated
 WITH CHECK (created_by = auth.uid());
 
+-- Политика на обновление
+CREATE POLICY "Users can update documents"
+ON crm_gbs_documents
+FOR UPDATE
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
 -- Политика на удаление
 CREATE POLICY "Users can delete documents"
 ON crm_gbs_documents

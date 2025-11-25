@@ -213,6 +213,39 @@ export const useDocuments = (
     }
   };
 
+  // Функция переименования документа
+  const renameDocument = async (documentId: string, newName: string) => {
+    setLoading(true);
+    try {
+      console.log('Renaming document:', { documentId, newName });
+      
+      const { data, error } = await supabase
+        .from('crm_gbs_documents')
+        .update({ name: newName })
+        .eq('id', documentId)
+        .select();
+
+      console.log('Rename result:', { data, error });
+
+      if (error) {
+        console.error('Error renaming document:', error);
+        return { error: error.message };
+      }
+
+      // Обновляем локальное состояние
+      setDocuments(prev => 
+        prev.map(doc => doc.id === documentId ? { ...doc, name: newName } : doc)
+      );
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error renaming document:', error);
+      return { error: 'Failed to rename document' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Вспомогательная функция форматирования размера файла
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -234,6 +267,7 @@ export const useDocuments = (
     loading,
     uploadDocument,
     deleteDocument,
+    renameDocument,
     fetchDocuments
   };
 };

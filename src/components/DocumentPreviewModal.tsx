@@ -20,6 +20,27 @@ export function DocumentPreviewModal({
   const isImage = document.file_type.startsWith('image/');
   const isPDF = document.file_type === 'application/pdf';
   const isVideo = document.file_type.startsWith('video/');
+  
+  // Office документы
+  const isWord = document.file_type.includes('word') || 
+                 document.file_type.includes('msword') ||
+                 document.name.endsWith('.doc') || 
+                 document.name.endsWith('.docx');
+  const isExcel = document.file_type.includes('excel') || 
+                  document.file_type.includes('spreadsheet') ||
+                  document.name.endsWith('.xls') || 
+                  document.name.endsWith('.xlsx');
+  const isPowerPoint = document.file_type.includes('presentation') || 
+                       document.file_type.includes('powerpoint') ||
+                       document.name.endsWith('.ppt') || 
+                       document.name.endsWith('.pptx');
+  
+  const isOfficeDoc = isWord || isExcel || isPowerPoint;
+  
+  // URL для Google Docs Viewer
+  const officeViewerUrl = isOfficeDoc 
+    ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(document.file_url)}`
+    : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -62,6 +83,12 @@ export function DocumentPreviewModal({
               >
                 Your browser does not support the video tag.
               </video>
+            ) : isOfficeDoc && officeViewerUrl ? (
+              <iframe
+                src={officeViewerUrl}
+                className="w-full h-full rounded-lg shadow-lg bg-white"
+                title={document.name}
+              />
             ) : (
               <div className="text-center px-4">
                 <FileText className="w-16 h-16 sm:w-24 sm:h-24 text-gray-300 mx-auto mb-4" />

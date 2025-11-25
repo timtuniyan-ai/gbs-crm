@@ -10,6 +10,7 @@ import { BriefDetailsModal } from "./BriefDetailsModal";
 import { DocumentCard } from "./DocumentCard";
 import { DocumentPreviewModal } from "./DocumentPreviewModal";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
+import { RenameDocumentDialog } from "./RenameDocumentDialog";
 import { Badge } from "./ui/badge";
 import { Mail, Phone, Building2, FileText, User, Archive, ArchiveRestore, Plus, Edit, Upload } from "lucide-react";
 import { formatDateTimeCompact, formatDate } from "../utils/dateUtils";
@@ -72,6 +73,8 @@ export function ClientDetailsModal({
   const [showDocumentPreview, setShowDocumentPreview] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [documentToRename, setDocumentToRename] = useState<Document | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Documents hook
@@ -79,7 +82,8 @@ export function ClientDetailsModal({
     documents, 
     loading: documentsLoading, 
     uploadDocument, 
-    deleteDocument 
+    deleteDocument,
+    renameDocument 
   } = useDocuments('client', client?.id);
 
   // Update active tab when defaultTab changes
@@ -203,6 +207,30 @@ export function ClientDetailsModal({
   const handlePreviewDocument = (document: Document) => {
     setSelectedDocument(document);
     setShowDocumentPreview(true);
+  };
+
+  const handleRenameDocument = (documentId: string) => {
+    const doc = documents.find(d => d.id === documentId);
+    if (doc) {
+      setDocumentToRename(doc);
+      setShowRenameDialog(true);
+    }
+  };
+
+  const confirmRenameDocument = async (newName: string) => {
+    if (!documentToRename) return;
+    
+    const result = await renameDocument(documentToRename.id, newName);
+    if (result.error) {
+      console.error('Error renaming document:', result.error);
+      toast.error('Failed to rename document', {
+        description: result.error
+      });
+    } else {
+      toast.success('Document renamed successfully!');
+    }
+    
+    setDocumentToRename(null);
   };
 
   return (
@@ -674,6 +702,7 @@ export function ClientDetailsModal({
                         document={document}
                         onPreview={handlePreviewDocument}
                         onDelete={handleDeleteDocument}
+                        onRename={handleRenameDocument}
                       />
                     ))}
                   </div>
@@ -722,6 +751,13 @@ export function ClientDetailsModal({
           onOpenChange={setShowDeleteConfirm}
           onConfirm={confirmDeleteDocument}
           itemName={documentToDelete?.name}
+        />
+
+        <RenameDocumentDialog
+          open={showRenameDialog}
+          onOpenChange={setShowRenameDialog}
+          onRename={confirmRenameDocument}
+          currentName={documentToRename?.name || ''}
         />
       </DialogContent>
     </Dialog>

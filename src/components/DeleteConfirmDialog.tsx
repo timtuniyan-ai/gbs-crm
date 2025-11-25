@@ -34,16 +34,22 @@ export function DeleteConfirmDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className="max-w-[90vw] sm:max-w-md md:max-w-lg">
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogDescription className="space-y-3">
             {description || (
               <>
-                Are you sure you want to delete document{" "}
-                <span className="font-semibold text-gray-900">"{itemName}"</span>?
-                <br />
-                This action cannot be undone.
+                <p className="text-gray-600">Are you sure you want to delete document:</p>
+                <div className="p-3 bg-gray-50 rounded-md border border-gray-200 max-w-full overflow-hidden">
+                  <p 
+                    className="font-semibold text-gray-900 break-all text-sm"
+                    style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                  >
+                    "{itemName}"
+                  </p>
+                </div>
+                <p className="text-sm text-gray-600">This action cannot be undone.</p>
               </>
             )}
           </AlertDialogDescription>
