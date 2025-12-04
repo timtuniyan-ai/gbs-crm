@@ -1,25 +1,43 @@
 import { useState, useMemo } from "react";
 import { useDrop } from "react-dnd";
-import { Client, Task } from "../types";
+import { Client, Task, GlobalNote } from "../types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ClientCard } from "./ClientCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Plus, Users, LogOut, Search, Archive } from "lucide-react";
+import { Plus, Users, LogOut, Search, Archive, StickyNote } from "lucide-react";
+import { GlobalNotesPanel } from "./GlobalNotesPanel";
 
 interface DashboardProps {
   clients: Client[];
   tasks: Task[];
+  globalNotes: GlobalNote[];
   onAddClientClick: () => void;
   onClientClick: (client: Client, defaultTab?: "info" | "notes" | "tasks" | "briefs" | "documents") => void;
   onToggleArchive: (clientId: string) => void;
   onEditClient: (clientId: string) => void;
   onLogout: () => void;
+  onAddGlobalNote: (title: string, content: string) => Promise<void>;
+  onUpdateGlobalNote: (id: string, title: string, content: string) => Promise<void>;
+  onDeleteGlobalNote: (id: string) => Promise<void>;
 }
 
-export function Dashboard({ clients, tasks, onAddClientClick, onClientClick, onToggleArchive, onEditClient, onLogout }: DashboardProps) {
+export function Dashboard({ 
+  clients, 
+  tasks, 
+  globalNotes,
+  onAddClientClick, 
+  onClientClick, 
+  onToggleArchive, 
+  onEditClient, 
+  onLogout,
+  onAddGlobalNote,
+  onUpdateGlobalNote,
+  onDeleteGlobalNote,
+}: DashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"active" | "archived">("active");
+  const [isNotesPanelOpen, setIsNotesPanelOpen] = useState(false);
 
   // Drop zones for Active and Archive tabs
   const [{ isOverActive, canDropActive }, dropActive] = useDrop(() => ({
@@ -81,8 +99,48 @@ export function Dashboard({ clients, tasks, onAddClientClick, onClientClick, onT
   }, [activeClients, archivedClients, activeTab, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Fixed Notes Button on Left Edge - скрывается когда панель открыта */}
+      {!isNotesPanelOpen && (
+        <button
+          onClick={() => setIsNotesPanelOpen(true)}
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-r-lg shadow-lg transition-all"
+          title="Global Notes"
+        >
+          <StickyNote className="w-5 h-5" />
+        </button>
+      )}
+
+      {/* Overlay - закрывает панель при клике вне её */}
+      {isNotesPanelOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-20 z-30 transition-opacity duration-300"
+          onClick={() => setIsNotesPanelOpen(false)}
+        />
+      )}
+
+      {/* Global Notes Sidebar */}
+      <div
+        className={`fixed left-0 top-0 h-full w-80 z-40 transform transition-transform duration-300 ease-in-out ${
+          isNotesPanelOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <GlobalNotesPanel
+          notes={globalNotes}
+          onAddNote={onAddGlobalNote}
+          onUpdateNote={onUpdateGlobalNote}
+          onDeleteNote={onDeleteGlobalNote}
+          onClose={() => setIsNotesPanelOpen(false)}
+        />
+      </div>
+
+      {/* Main Content */}
+      <div
+        className={`flex-1 transition-all duration-300 ease-in-out ${
+          isNotesPanelOpen ? "ml-80" : "ml-0"
+        }`}
+      >
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="container mx-auto px-6 py-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
@@ -265,6 +323,7 @@ export function Dashboard({ clients, tasks, onAddClientClick, onClientClick, onT
           </Tabs>
         )}
       </main>
+      </div>
     </div>
   );
 }

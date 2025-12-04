@@ -55,6 +55,14 @@ export interface Task {
   updatedAt?: Date;
 }
 
+export interface GlobalNote {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export type BriefDocumentType = 'business_application' | 'marketing_brief' | 'technical_brief';
 export type BriefLanguage = 'ru' | 'en';
 export type BriefStatus = 'created' | 'in_progress' | 'completed';

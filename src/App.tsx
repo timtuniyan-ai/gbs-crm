@@ -12,9 +12,11 @@ import { Client, Note, Task } from "./types";
 import { clientsApi, notesApi, tasksApi, authApi } from "../lib/api";
 import { supabase } from "../lib/supabase";
 import { taskDueChecker } from "./utils/taskDueChecker";
+import { useGlobalNotes } from "./hooks/useGlobalNotes";
 
 function CRMApp() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState<string | undefined>(undefined);
   const [clients, setClients] = useState<Client[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -25,21 +27,32 @@ function CRMApp() {
   const [defaultTab, setDefaultTab] = useState<"info" | "notes" | "tasks" | "briefs" | "documents">("info");
   const [loading, setLoading] = useState(true);
 
+  // Global notes hook
+  const {
+    notes: globalNotes,
+    addNote: addGlobalNote,
+    updateNote: updateGlobalNote,
+    deleteNote: deleteGlobalNote,
+  } = useGlobalNotes(userId);
+
   // Check authentication on mount
   useEffect(() => {
     authApi.getSession()
       .then(session => {
         setIsLoggedIn(!!session);
+        setUserId(session?.user?.id);
         setLoading(false);
       })
       .catch(error => {
         setIsLoggedIn(false);
+        setUserId(undefined);
         setLoading(false);
       });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session);
+      setUserId(session?.user?.id);
     });
 
     return () => subscription.unsubscribe();
@@ -92,6 +105,7 @@ function CRMApp() {
   const handleLogout = async () => {
     await authApi.signOut();
     setIsLoggedIn(false);
+    setUserId(undefined);
     setClients([]);
     setNotes([]);
     setTasks([]);
@@ -240,11 +254,15 @@ function CRMApp() {
       <Dashboard
         clients={clients}
         tasks={tasks}
+        globalNotes={globalNotes}
         onAddClientClick={() => setIsAddClientModalOpen(true)}
         onClientClick={handleClientClick}
         onToggleArchive={handleToggleArchive}
         onEditClient={handleEditClient}
         onLogout={handleLogout}
+        onAddGlobalNote={addGlobalNote}
+        onUpdateGlobalNote={updateGlobalNote}
+        onDeleteGlobalNote={deleteGlobalNote}
       />
 
       <AddClientModal
