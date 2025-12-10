@@ -8,6 +8,7 @@ import { AddClientModal } from "./components/AddClientModal";
 import { EditClientModal } from "./components/EditClientModal";
 import { ClientDetailsModal } from "./components/ClientDetailsModal";
 import { BriefPublicPage } from "./components/BriefPublicPage";
+import { Toaster } from "./components/ui/sonner";
 import { Client, Note, Task } from "./types";
 import { clientsApi, notesApi, tasksApi, authApi } from "../lib/api";
 import { supabase } from "../lib/supabase";
@@ -306,6 +307,7 @@ function CRMApp() {
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster />
       <Routes>
         <Route path="/" element={<CRMApp />} />
         <Route path="/brief/:token" element={<BriefPublicPage />} />

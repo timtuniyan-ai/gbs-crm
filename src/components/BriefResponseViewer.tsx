@@ -10,6 +10,7 @@ import { Separator } from "./ui/separator";
 import { Building2, DollarSign, FileText, User, Shield, Calendar, CheckCircle2, Edit, Download, Save, X } from "lucide-react";
 import { Brief } from "../types";
 import { briefsApi } from "../../lib/api";
+import { toast } from "sonner";
 
 interface BriefResponseViewerProps {
   open: boolean;
@@ -138,10 +139,10 @@ export function BriefResponseViewer({ open, onOpenChange, brief }: BriefResponse
       await briefsApi.update(brief.id, { data: editedData });
       brief.data = editedData; // Update local data
       setIsEditing(false);
-      alert('Изменения успешно сохранены!');
+      toast.success('Изменения успешно сохранены!');
     } catch (error) {
       console.error('Error saving changes:', error);
-      alert('Ошибка при сохранении изменений');
+      toast.error('Ошибка при сохранении изменений');
     } finally {
       setIsSaving(false);
     }

@@ -446,6 +446,25 @@ export const briefsApi = {
     return dbToBrief(data)
   },
 
+  async update(id: string, updates: Partial<Brief>) {
+    const updateData: any = {}
+    
+    if (updates.data !== undefined) updateData.data = updates.data
+    if (updates.status !== undefined) updateData.status = updates.status
+    if (updates.currentStep !== undefined) updateData.current_step = updates.currentStep
+    if (updates.completedAt !== undefined) updateData.completed_at = updates.completedAt?.toISOString()
+
+    const { data: result, error } = await supabase
+      .from('gbs_crm_briefs')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return dbToBrief(result)
+  },
+
   async updateProgress(id: string, currentStep: number, data: Record<string, any>, status?: 'in_progress' | 'completed') {
     const updateData: any = {
       current_step: currentStep,
